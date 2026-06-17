@@ -4,7 +4,7 @@ namespace Singularity.Raymond.Models;
 
 public class ServerMember
 {
-    public int Id { get; set; }
+    public int Id { get; set; } = 0;
     public long UserId { get; set; }
     public long GuildId { get; set; }
     public string? Name { get; set; }
