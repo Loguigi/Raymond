@@ -23,6 +23,7 @@ public class ServerMember
     public DateTime? NextBirthday => Birthday?.AddYears(Age + 1) ?? DateTime.MinValue;
     public string FormattedBirthday => Birthday?.ToString("MMMM d, yyyy") ?? "N/A";
     public string FormattedNextBirthday => NextBirthday?.ToString("MMMM d, yyyy") ?? "N/A";
+    public int DaysUntilBirthday => (NextBirthday?.Date - DateTime.Today.Date)?.Days ?? 0;
     
     public int Age 
     {

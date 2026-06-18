@@ -9,7 +9,7 @@ public static class CustomMessages
 {
     public static M Leaderboard(DiscordGuild guild, List<ServerMember> members, LeaderboardId id)
     {
-        var paginator = new Paginator<ServerMember>(members, 10, id.PageToken);
+        var paginator = new Paginator<ServerMember>(members.OrderBy(m => m.Rank), 10, id.PageToken);
         
         return new M
         {   
@@ -34,6 +34,25 @@ public static class CustomMessages
                 Footer = paginator.PageStatus
             },
             Buttons = PaginationButtons.Create(paginator, page => new LeaderboardId(page).Build())
+        };
+    }
+
+    public static M BirthdayList(DiscordGuild guild, List<ServerMember> members, BirthdayListId id)
+    {
+        var paginator = new Paginator<ServerMember>(members.OrderBy(m => m.NextBirthday), 15, id.PageToken);
+        
+        return new M
+        {
+            Embed = new E
+            {
+                Author = guild.Name,
+                AuthorImg = guild.IconUrl,
+                Title = "Birthday List",
+                Desc = paginator.RenderPage((member, _) => $"* {member.DisplayMention}: {member.FormattedNextBirthday} `({member.Age + 1})`"),
+                Color = DiscordColor.HotPink,
+                Footer = paginator.PageStatus
+            },
+            Buttons = PaginationButtons.Create(paginator, page => new BirthdayListId(page).Build()),
         };
     }
 }
