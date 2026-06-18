@@ -18,9 +18,22 @@ public static class CustomMessages
                 Author = guild.Name,
                 AuthorImg = guild.IconUrl,
                 Title = "Leaderboard",
+                Desc = paginator.RenderPage((member, _) =>
+                {
+                    var rankText = member.Rank switch
+                    {
+                        1 => "### 🥇",
+                        2 => "### 🥈",
+                        3 => "### 🥉",
+                        _ => $"### **__#{member.Rank}__**"
+                    };
+
+                    return $"{rankText} {member.DisplayMention} `LVL {member.Level}` `{member.Experience} XP`";
+                }),
                 Color = DiscordColor.Orange,
+                Footer = paginator.PageStatus
             },
-            Buttons = PaginationButtons.Create(paginator, page => id.Build())
+            Buttons = PaginationButtons.Create(paginator, page => new LeaderboardId(page).Build())
         };
     }
 }

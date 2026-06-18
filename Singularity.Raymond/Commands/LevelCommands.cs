@@ -6,6 +6,7 @@ using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
 using Singularity.Raymond.Models;
 using Singularity.Raymond.Repositories;
+using Singularity.Raymond.Utilities;
 using Singularity.Shared.Discord;
 
 namespace Singularity.Raymond.Commands;
@@ -54,8 +55,17 @@ public class LevelCommands(
             await Send(ctx, e);
         }, "level");
     }
-    
+
     [Command("leaderboard")]
+    public async Task Leaderboard(SlashCommandContext ctx)
+    {
+        await ExecuteAsync(ctx, async () =>
+        {
+            var members = await memberRepo.GetMembersAsync(ctx.Guild!);
+
+            await Send(ctx, CustomMessages.Leaderboard(ctx.Guild!, members, new LeaderboardId("1")));
+        }, "leaderboard");
+    }
     
     private static string GetRankEmoji(int rank) => rank switch
     {
