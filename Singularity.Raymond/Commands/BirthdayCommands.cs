@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Globalization;
+using DSharpPlus;
 using DSharpPlus.Commands;
 using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.Processors.SlashCommands;
@@ -13,9 +14,10 @@ namespace Singularity.Raymond.Commands;
 
 [Command("birthday")]
 public class BirthdayCommands(
+    DiscordClient client,
     ServerMemberRepository memberRepo,
     ILogger<BirthdayCommands> logger)
-    : BaseCommand(logger)
+    : BaseCommand(client, logger)
 {
     [Command("check"), Description("Check a member's birthday"), RequireGuild]
     public async Task CheckBirthday(SlashCommandContext ctx, DiscordUser user)

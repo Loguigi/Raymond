@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using DSharpPlus;
 using DSharpPlus.Commands;
 using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.Processors.SlashCommands;
@@ -12,9 +13,10 @@ using Singularity.Shared.Discord;
 namespace Singularity.Raymond.Commands;
 
 public class LevelCommands(
+    DiscordClient client,
     ILogger<BaseCommand> logger,
     ServerMemberRepository memberRepo)
-    : BaseCommand(logger)
+    : BaseCommand(client, logger)
 {
     [Command("level"), RequireGuild, Description("Displays your level card or another user's level card")]
     public async Task Level(SlashCommandContext ctx, DiscordUser? user = null)

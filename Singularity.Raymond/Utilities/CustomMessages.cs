@@ -40,7 +40,7 @@ public static class CustomMessages
     public static M BirthdayList(DiscordGuild guild, List<ServerMember> members, BirthdayListId id)
     {
         var paginator = new Paginator<ServerMember>(
-            members.Where(m => m.Birthday.HasValue).OrderBy(m => m.NextBirthday), 15, id.PageToken);
+            members.Where(m => m.Birthday.HasValue).OrderBy(m => m.NextBirthday), 10, id.PageToken);
         
         return new M
         {
@@ -67,7 +67,7 @@ public static class CustomMessages
     public static M Identities(DiscordGuild guild, List<ServerMember> members, IdentitiesId id)
     {
         var paginator = new Paginator<ServerMember>(
-            members.OrderByDescending(m => m.Name), 5, id.PageToken);
+            members.OrderByDescending(m => m.Name), 10, id.PageToken);
 
         return new M
         {
@@ -81,6 +81,30 @@ public static class CustomMessages
                 Footer = paginator.PageStatus
             },
             Buttons = PaginationButtons.Create(paginator, page => new IdentitiesId(page).Build())
+        };
+    }
+
+    public static M CoinFlip(ServerMember member, CoinFlipId id)
+    {
+        return new M
+        {
+            Embed = new E
+            {
+                Author = member.DisplayName,
+                AuthorImg = member.User.AvatarUrl,
+                Desc = $"# {id.LastFlip}",
+                Timestamp = true,
+                Color = id.LastFlip == FlipResult.Heads ? DiscordColor.Green : DiscordColor.Red,
+                Fields =
+                [
+                    new EField("Heads", id.HeadCount.ToString(), true),
+                    new EField("Tails", id.TailsCount.ToString(), true)
+                ]
+            },
+            Buttons = 
+            [
+                new Button(DiscordButtonStyle.Success, id.Build(), "Flip Again", "🪙")
+            ]
         };
     }
 }

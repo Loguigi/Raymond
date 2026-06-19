@@ -27,9 +27,9 @@ public sealed class ServerMemberRepository(
         public bool Active { get; set; }
     }
 
-    public async Task<ServerMember?> GetMemberAsync(DiscordGuild guild, DiscordUser user)
+    public async Task<ServerMember> GetMemberAsync(DiscordGuild guild, DiscordUser user)
     {
-        if (user.IsBot) return null;
+        if (user.IsBot) throw new Exception("Bot passed in as user");
 
         var member = new ServerMember(user, guild);
         
@@ -98,7 +98,7 @@ public sealed class ServerMemberRepository(
                 await SaveMember(newMember);
                 
                 newMember = await GetMemberAsync(guild, guildMember);
-                if (newMember is not null) serverMembers.Add(newMember);
+                serverMembers.Add(newMember);
             }
         }
         
