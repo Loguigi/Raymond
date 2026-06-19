@@ -2,21 +2,20 @@ using DSharpPlus.Entities;
 
 namespace Singularity.Raymond.Models;
 
-public class ServerMember
+public class ServerMember(DiscordUser user, DiscordGuild guild)
 {
     public int Id { get; set; } = 0;
-    public long UserId { get; set; }
-    public long GuildId { get; set; }
+    public DiscordUser User { get; } = user;
+    public DiscordGuild Guild { get; } = guild;
     public string? Name { get; set; }
     public int Level { get; set; } = 1;
     public int Experience { get; set; } = 0;
     public DateTime? Birthday { get; set; }
     public bool Active { get; set; } = true;
-
-    public DiscordUser User { get; set; } = null!;
-    public DiscordGuild Guild { get; set; } = null!;
     public int Rank { get; set; } = 0;
     
+    public long UserId => (long)User.Id;
+    public long GuildId => (long)Guild.Id;
     public string DisplayName => Name ?? User.Username;
     public string DisplayMention => Name ?? User.Mention;
     public int ExpNeededForNextLevel => 2 * (int)Math.Pow(Level + 1, 2) - 2;

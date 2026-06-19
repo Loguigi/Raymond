@@ -7,7 +7,7 @@ using Singularity.Shared.Data;
 
 namespace Singularity.Raymond.Repositories;
 
-public class ServerMemberRepository(
+public sealed class ServerMemberRepository(
     IDbConnectionFactory factory,
     DiscordClient client,
     ILogger<ServerMemberRepository> logger) 
@@ -15,46 +15,69 @@ public class ServerMemberRepository(
 {
     private const int ExpGain = 1;
 
+    private sealed class ServerMemberRecord
+    {
+        public int Id { get; set; }
+        public long GuildId { get; set; }
+        public long UserId { get; set; }
+        public string? Name { get; set; }
+        public int Level { get; set; }
+        public int Experience { get; set; }
+        public DateTime? Birthday { get; set; }
+        public bool Active { get; set; }
+    }
+
     public async Task<ServerMember?> GetMemberAsync(DiscordGuild guild, DiscordUser user)
     {
         if (user.IsBot) return null;
+
+        var member = new ServerMember(user, guild);
         
-        var member = await GetFirstAsync<ServerMember>("GetServerMember", 
+        var memberRecord = await GetFirstAsync<ServerMemberRecord>("GetServerMember", 
             new DynamicParameters(new { GuildId = (long)guild.Id, UserId = (long)user.Id }));
 
-        if (member is null)
+        if (memberRecord is null)
         {
-            member = new ServerMember
-            {
-                UserId = (long)user.Id,
-                GuildId = (long)guild.Id
-            };
-
             await SaveMember(member);
+            
+            memberRecord = await GetFirstAsync<ServerMemberRecord>("GetServerMember", 
+                new DynamicParameters(new { GuildId = (long)guild.Id, UserId = (long)user.Id }));
         }
 
-        member.Guild = guild;
-        member.User = user;
+        member.Name = memberRecord!.Name;
+        member.Level = memberRecord.Level;
+        member.Experience = memberRecord.Experience;
+        member.Birthday = memberRecord.Birthday;
+        member.Active = memberRecord.Active;
 
         return member;
     }
 
     public async Task<List<ServerMember>> GetMembersAsync(DiscordGuild guild)
     {
-        var members = await GetAllAsync<ServerMember>("GetServerMembers", new DynamicParameters(new { GuildId = (long)guild.Id }));
-        var serverMembers = members.ToList();
+        var serverMembers = new List<ServerMember>();
+        var memberRecords = await GetAllAsync<ServerMemberRecord>("GetServerMembers", new DynamicParameters(new { GuildId = (long)guild.Id }));
+        var memberRecordsList = memberRecords.ToList();
         
-        foreach (var member in serverMembers)
+        // Map all existing user records
+        foreach (var member in memberRecordsList)
         {
-            member.Guild = guild;
-            member.User = await GetDiscordUserAsync(member.UserId);
+            serverMembers.Add(new ServerMember(await GetDiscordUserAsync(member.UserId), guild)
+            {
+                Name = member.Name,
+                Level = member.Level,
+                Experience = member.Experience,
+                Birthday = member.Birthday,
+                Active = member.Active
+            });
         }
 
+        // Create entries for server users that aren't in SQL
         foreach (var guildMember in guild.Members.Values)
         {
             if (guildMember.IsBot) continue;
             
-            var member = serverMembers.FirstOrDefault(x => x.UserId == (long)guildMember.Id);
+            var member = serverMembers.FirstOrDefault(x => x.User == guildMember);
 
             if (member is not null)
             {
@@ -65,10 +88,8 @@ public class ServerMemberRepository(
             }
             else
             {
-                var newMember = new ServerMember
+                var newMember = new ServerMember(guildMember, guild)
                 {
-                    UserId = (long)guildMember.Id,
-                    GuildId = (long)guild.Id,
                     Active = true
                 };
                 
@@ -76,6 +97,7 @@ public class ServerMemberRepository(
             }
         }
         
+        // Calculate level rankings
         serverMembers = serverMembers
             .Where(x => x.Active)
             .OrderByDescending(x => x.Level)
@@ -92,7 +114,19 @@ public class ServerMemberRepository(
     
     public async Task SaveMember(ServerMember member)
     {
-        await ExecuteAsync("SaveServerMember", new DynamicParameters(member));
+        var record = new ServerMemberRecord
+        {
+            Id = member.Id,
+            GuildId = member.GuildId,
+            UserId = member.GuildId,
+            Name = member.Name,
+            Level = member.Level,
+            Experience = member.Experience,
+            Birthday = member.Birthday,
+            Active = member.Active,
+        };
+        
+        await ExecuteAsync("SaveServerMember", new DynamicParameters(record));
     }
     
     public async Task<bool> GrantExp(ServerMember member)
