@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using DSharpPlus.Commands;
 using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.Processors.SlashCommands;
@@ -84,5 +85,51 @@ public class BirthdayCommands(
 
             await Send(ctx, CustomMessages.BirthdayList(ctx.Guild!, members, new BirthdayListId("1")));
         }, "birthday list");
+    }
+
+    [Command("change"), Description("Change a member's birthday"), RequireGuild]
+    public async Task ChangeBirthday(SlashCommandContext ctx, DiscordUser user, long year, long month, long day)
+    {
+        await ExecuteAsync(ctx, async () =>
+        {
+            if (await IsBot(ctx, user)) return;
+
+            if (!DateTime.TryParse($"{year}-{month}-{day}", out var date)
+                || date >= DateTime.Today)
+            {
+                await Send(ctx, Embeds.Error("Invalid date!"), true);
+            }
+
+            var member = await memberRepo.GetMemberAsync(ctx.Guild!, user);
+            if (member is null) return;
+
+            member.Birthday = date;
+            await memberRepo.SaveMember(member);
+
+            await Send(ctx,
+                Embeds.Success($"Birthday for {member.DisplayMention} changed to {member.FormattedBirthday}!"));
+        }, "birthday change");
+    }
+
+    [Command("add"), Description("Add your birthday date"), RequireGuild]
+    public async Task AddBirthday(SlashCommandContext ctx, long year, long month, long day)
+    {
+        await ExecuteAsync(ctx, async () =>
+        {
+            if (!DateTime.TryParse($"{year}-{month}-{day}", out var date)
+                || date >= DateTime.Today)
+            {
+                await Send(ctx, Embeds.Error("Invalid date!"), true);
+            }
+
+            var member = await memberRepo.GetMemberAsync(ctx.Guild!, ctx.User);
+            if (member is null) return;
+
+            member.Birthday = date;
+            await memberRepo.SaveMember(member);
+
+            await Send(ctx,
+                Embeds.Success($"Your birthday is set to {member.FormattedBirthday}!"));
+        }, "birthday add");
     }
 }
