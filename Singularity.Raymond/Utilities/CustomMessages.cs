@@ -39,7 +39,8 @@ public static class CustomMessages
 
     public static M BirthdayList(DiscordGuild guild, List<ServerMember> members, BirthdayListId id)
     {
-        var paginator = new Paginator<ServerMember>(members.OrderBy(m => m.NextBirthday), 15, id.PageToken);
+        var paginator = new Paginator<ServerMember>(
+            members.Where(m => m.Birthday.HasValue).OrderBy(m => m.NextBirthday), 15, id.PageToken);
         
         return new M
         {
@@ -47,8 +48,15 @@ public static class CustomMessages
             {
                 Author = guild.Name,
                 AuthorImg = guild.IconUrl,
-                Title = "Birthday List",
-                Desc = paginator.RenderPage((member, _) => $"* {member.DisplayMention}: {member.FormattedNextBirthday} `({member.Age + 1})`"),
+                Title = "Birthdays",
+                Desc = paginator.RenderPage((member, _) =>
+                {
+                    var turningAge = member.NextBirthday?.Date == DateTime.Today
+                        ? member.Age
+                        : member.Age + 1;
+                    
+                    return $"* {member.DisplayMention}: {member.FormattedNextBirthday} `({turningAge})`";
+                }),
                 Color = DiscordColor.HotPink,
                 Footer = paginator.PageStatus
             },

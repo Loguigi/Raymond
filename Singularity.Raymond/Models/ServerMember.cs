@@ -19,7 +19,6 @@ public class ServerMember(DiscordUser user, DiscordGuild guild)
     public string DisplayName => Name ?? User.Username;
     public string DisplayMention => Name ?? User.Mention;
     public int ExpNeededForNextLevel => 2 * (int)Math.Pow(Level + 1, 2) - 2;
-    public DateTime? NextBirthday => Birthday?.AddYears(Age + 1) ?? DateTime.MinValue;
     public string FormattedBirthday => Birthday?.ToString("MMMM d, yyyy") ?? "N/A";
     public string FormattedNextBirthday => NextBirthday?.ToString("MMMM d, yyyy") ?? "N/A";
     public int DaysUntilBirthday => (NextBirthday?.Date - DateTime.Today.Date)?.Days ?? 0;
@@ -49,6 +48,24 @@ public class ServerMember(DiscordUser user, DiscordGuild guild)
             }
 
             return age;
+        }
+    }
+    
+    public DateTime? NextBirthday
+    {
+        get
+        {
+            if (Birthday is null) return null;
+
+            var today = DateTime.Today;
+            var birthday = Birthday.Value;
+
+            var next = new DateTime(today.Year, birthday.Month, birthday.Day);
+
+            if (next < today)
+                next = next.AddYears(1);
+
+            return next;
         }
     }
     

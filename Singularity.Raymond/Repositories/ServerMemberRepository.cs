@@ -33,7 +33,7 @@ public sealed class ServerMemberRepository(
 
         var member = new ServerMember(user, guild);
         
-        var memberRecord = await GetFirstAsync<ServerMemberRecord>("GetServerMember", 
+        var memberRecord = await GetFirstAsync<ServerMemberRecord>("GetMember", 
             new DynamicParameters(new { GuildId = (long)guild.Id, UserId = (long)user.Id }));
 
         if (memberRecord is null)
@@ -118,7 +118,7 @@ public sealed class ServerMemberRepository(
         {
             Id = member.Id,
             GuildId = member.GuildId,
-            UserId = member.GuildId,
+            UserId = member.UserId,
             Name = member.Name,
             Level = member.Level,
             Experience = member.Experience,

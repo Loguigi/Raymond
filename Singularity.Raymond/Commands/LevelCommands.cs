@@ -43,6 +43,7 @@ public class LevelCommands(
                 Author = ctx.Guild!.Name,
                 AuthorImg = ctx.Guild.IconUrl,
                 Title = $"{prefix} {member.DisplayName}",
+                Thumbnail = member.User.AvatarUrl,
                 Color = DiscordColor.Orange,
                 Fields =
                 [
