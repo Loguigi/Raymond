@@ -63,4 +63,24 @@ public static class CustomMessages
             Buttons = PaginationButtons.Create(paginator, page => new BirthdayListId(page).Build()),
         };
     }
+
+    public static M Identities(DiscordGuild guild, List<ServerMember> members, IdentitiesId id)
+    {
+        var paginator = new Paginator<ServerMember>(
+            members.OrderByDescending(m => m.Name), 5, id.PageToken);
+
+        return new M
+        {
+            Embed = new E
+            {
+                Author = guild.Name,
+                AuthorImg = guild.IconUrl,
+                Title = "Super Goober List",
+                Color = DiscordColor.Azure,
+                Desc = paginator.RenderPage((member, _) => $"* {member.User.Mention} ➡️ **{member.Name ?? "`?`"}**"),
+                Footer = paginator.PageStatus
+            },
+            Buttons = PaginationButtons.Create(paginator, page => new IdentitiesId(page).Build())
+        };
+    }
 }

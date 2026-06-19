@@ -44,7 +44,8 @@ public sealed class ServerMemberRepository(
                 new DynamicParameters(new { GuildId = (long)guild.Id, UserId = (long)user.Id }));
         }
 
-        member.Name = memberRecord!.Name;
+        member.Id = memberRecord!.Id;
+        member.Name = memberRecord.Name;
         member.Level = memberRecord.Level;
         member.Experience = memberRecord.Experience;
         member.Birthday = memberRecord.Birthday;
@@ -64,6 +65,7 @@ public sealed class ServerMemberRepository(
         {
             serverMembers.Add(new ServerMember(await GetDiscordUserAsync(member.UserId), guild)
             {
+                Id = member.Id,
                 Name = member.Name,
                 Level = member.Level,
                 Experience = member.Experience,
@@ -94,6 +96,9 @@ public sealed class ServerMemberRepository(
                 };
                 
                 await SaveMember(newMember);
+                
+                newMember = await GetMemberAsync(guild, guildMember);
+                if (newMember is not null) serverMembers.Add(newMember);
             }
         }
         

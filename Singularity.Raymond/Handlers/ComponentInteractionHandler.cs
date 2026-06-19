@@ -29,6 +29,7 @@ public class ComponentInteractionHandler(
         {
             IdPrefixes.Leaderboard => HandleLeaderboard(e),
             IdPrefixes.BirthdayList => HandleBirthdayList(e),
+            IdPrefixes.Identities => HandleIdentities(e),
             _ => Task.CompletedTask
         };
     }
@@ -40,7 +41,7 @@ public class ComponentInteractionHandler(
             var members = await memberRepo.GetMembersAsync(e.Guild);
             if (!LeaderboardId.TryParse(e.Id, out var id) || id is null) return;
 
-            await Send(e, CustomMessages.Leaderboard(e.Guild, members, id));
+            await Update(e, CustomMessages.Leaderboard(e.Guild, members, id));
         }, "leaderboard", e.Id);
     }
 
@@ -51,7 +52,18 @@ public class ComponentInteractionHandler(
             var members = await memberRepo.GetMembersAsync(e.Guild);
             if (!BirthdayListId.TryParse(e.Id, out var id) || id is null) return;
 
-            await Send(e, CustomMessages.BirthdayList(e.Guild, members, id));
+            await Update(e, CustomMessages.BirthdayList(e.Guild, members, id));
         },  "birthday_list", e.Id);
+    }
+
+    private async Task HandleIdentities(ComponentInteractionCreatedEventArgs e)
+    {
+        await ExecuteAsync(e, async () =>
+        {
+            var members = await memberRepo.GetMembersAsync(e.Guild);
+            if (!IdentitiesId.TryParse(e.Id, out var id) || id is null) return;
+            
+            await Update(e, CustomMessages.Identities(e.Guild!, members, id));
+        }, "identities", e.Id);
     }
 }
