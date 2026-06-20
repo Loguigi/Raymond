@@ -10,7 +10,8 @@ namespace Singularity.Raymond.Handlers;
 public class MessageCreatedHandler(
     DiscordClient client,
     ILogger<MessageCreatedHandler> logger,
-    ServerMemberRepository memberRepo)
+    ServerMemberRepository memberRepo,
+    ServerConfigRepository configRepo)
     : BaseHandler(client, logger), IEventHandler<MessageCreatedEventArgs>
 {
     public async Task HandleEventAsync(DiscordClient s, MessageCreatedEventArgs e)
@@ -24,11 +25,15 @@ public class MessageCreatedHandler(
 
         await ExecuteAsync(e, async () =>
         {
+            // Check config for enabled levels
+            var config = await configRepo.GetConfigAsync(e.Guild);
+            if (!config.EnableLevels) return;
+            
+            // Get member data and grant experience
             var member = await memberRepo.GetMemberAsync(e.Guild, e.Author);
-            // TODO: config check
-
             var levelUp = await memberRepo.GrantExp(member);
 
+            // Display level up card if user levelled up
             if (levelUp)
             {
                 var embed = new E
@@ -37,10 +42,10 @@ public class MessageCreatedHandler(
                     Footer = $"Level {member.Level - 1} ➡️ Level {member.Level}",
                     Color = DiscordColor.Aquamarine
                 };
-                // TODO: config default channel
-                var defaultChannel = e.Guild.GetDefaultChannel();
                 
-                await Send(defaultChannel!, embed);
+                var defaultChannel = config.DefaultChannel;
+                
+                await Send(defaultChannel, embed);
             }
         }, "exp_gain");
     }
