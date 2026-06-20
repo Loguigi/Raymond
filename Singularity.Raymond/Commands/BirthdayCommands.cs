@@ -106,7 +106,7 @@ public class BirthdayCommands(
             if (member is null) return;
 
             member.Birthday = date;
-            await memberRepo.SaveMember(member);
+            await memberRepo.SaveMemberAsync(member);
 
             await Send(ctx,
                 Embeds.Success($"Birthday for {member.DisplayMention} changed to {member.FormattedBirthday}!"));
@@ -128,7 +128,7 @@ public class BirthdayCommands(
             if (member is null) return;
 
             member.Birthday = date;
-            await memberRepo.SaveMember(member);
+            await memberRepo.SaveMemberAsync(member);
 
             await Send(ctx,
                 Embeds.Success($"Your birthday is set to {member.FormattedBirthday}!"));

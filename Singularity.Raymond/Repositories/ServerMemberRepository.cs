@@ -38,7 +38,7 @@ public sealed class ServerMemberRepository(
 
         if (memberRecord is null)
         {
-            await SaveMember(member);
+            await SaveMemberAsync(member);
             
             memberRecord = await GetFirstAsync<ServerMemberRecord>("GetServerMember", 
                 new DynamicParameters(new { GuildId = (long)guild.Id, UserId = (long)user.Id }));
@@ -86,7 +86,7 @@ public sealed class ServerMemberRepository(
                 if (member.Active) continue;
 
                 member.Active = true;
-                await SaveMember(member);
+                await SaveMemberAsync(member);
             }
             else
             {
@@ -95,7 +95,7 @@ public sealed class ServerMemberRepository(
                     Active = true
                 };
                 
-                await SaveMember(newMember);
+                await SaveMemberAsync(newMember);
                 
                 newMember = await GetMemberAsync(guild, guildMember);
                 serverMembers.Add(newMember);
@@ -117,7 +117,7 @@ public sealed class ServerMemberRepository(
         return serverMembers;
     }
     
-    public async Task SaveMember(ServerMember member)
+    public async Task SaveMemberAsync(ServerMember member)
     {
         var record = new ServerMemberRecord
         {
@@ -146,7 +146,7 @@ public sealed class ServerMemberRepository(
             leveledUp = true;
             logger.LogDebug("Member {UserId} leveled up to {Level}", member.UserId, member.Level);
         }
-        await SaveMember(member);
+        await SaveMemberAsync(member);
         
         return leveledUp;
     }

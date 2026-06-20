@@ -65,7 +65,7 @@ public class MiscCommands(
         {
             var member = await memberRepo.GetMemberAsync(ctx.Guild!, ctx.User);
             member.Name = name;
-            await memberRepo.SaveMember(member);
+            await memberRepo.SaveMemberAsync(member);
             
             await Send(ctx, Embeds.Success($"Your name is now **{name}!**"), true);
         }, "set-name");
