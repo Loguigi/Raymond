@@ -38,7 +38,7 @@ public class MessageCreatedHandler(
             {
                 var embed = new E
                 {
-                    Desc = $"### ⬆️ {member.User.Mention} has levelled up!",
+                    Desc = $"### ⬆️ {member.User.Mention} {config.LevelUpMessage}",
                     Footer = $"Level {member.Level - 1} ➡️ Level {member.Level}",
                     Color = DiscordColor.Aquamarine
                 };
