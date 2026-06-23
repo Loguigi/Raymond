@@ -29,12 +29,12 @@ public class ServerConfigRepository(
     {
         var config = new ServerConfig(guild, guild.GetDefaultChannel()!);
         
-        var configRecord = await GetFirstAsync<ServerConfigRecord>("GetServerConfig", new DynamicParameters(new {GuildId = guild.Id}));
+        var configRecord = await GetFirstAsync<ServerConfigRecord>("GetServerConfig", new {GuildId = (long)guild.Id});
         
         if (configRecord is null)
         {
             await SaveConfigAsync(config);
-            configRecord = await GetFirstAsync<ServerConfigRecord>("GetServerConfig", new DynamicParameters(new {GuildId = guild.Id}));
+            configRecord = await GetFirstAsync<ServerConfigRecord>("GetServerConfig", new {GuildId = (long)guild.Id});
         }
         
         config.WelcomeMessage = configRecord!.WelcomeMessage;
@@ -67,6 +67,6 @@ public class ServerConfigRepository(
             LoggingChannelId = config.LoggingChannelId
         };
         
-        await ExecuteAsync("SaveServerConfig", new DynamicParameters(record));
+        await ExecuteAsync("SaveServerConfig", record);
     }
 }

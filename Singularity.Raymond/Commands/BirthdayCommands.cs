@@ -47,12 +47,10 @@ public class BirthdayCommands(
     }
 
     [Command("next"), Description("Check who's birthday is next"), RequireGuild]
-    public async Task NextBirthday(SlashCommandContext ctx, DiscordUser user)
+    public async Task NextBirthday(SlashCommandContext ctx)
     {
         await ExecuteAsync(ctx, async () =>
         {
-            if (await IsBot(ctx, user)) return;
-            
             var members = await memberRepo.GetMembersAsync(ctx.Guild!);
             var nextBirthdayMember = memberRepo.GetNextBirthday(members);
             
@@ -103,7 +101,6 @@ public class BirthdayCommands(
             }
 
             var member = await memberRepo.GetMemberAsync(ctx.Guild!, user);
-            if (member is null) return;
 
             member.Birthday = date;
             await memberRepo.SaveMemberAsync(member);
@@ -125,7 +122,6 @@ public class BirthdayCommands(
             }
 
             var member = await memberRepo.GetMemberAsync(ctx.Guild!, ctx.User);
-            if (member is null) return;
 
             member.Birthday = date;
             await memberRepo.SaveMemberAsync(member);

@@ -33,6 +33,8 @@ public class ComponentInteractionHandler(
             IdPrefixes.BirthdayList => HandleBirthdayList(e),
             IdPrefixes.Identities => HandleIdentities(e),
             IdPrefixes.CoinFlip => HandleCoinFlip(e),
+            IdPrefixes.WheelSpin => HandleWheelSpin(e),
+            IdPrefixes.WheelList => HandleWheelList(e),
             _ => Task.CompletedTask
         };
     }
@@ -52,8 +54,8 @@ public class ComponentInteractionHandler(
     {
         await ExecuteAsync(e, async () =>
         {
-            var members = await memberRepo.GetMembersAsync(e.Guild);
             if (!BirthdayListId.TryParse(e.Id, out var id) || id is null) return;
+            var members = await memberRepo.GetMembersAsync(e.Guild);
 
             await Update(e, CustomMessages.BirthdayList(e.Guild, members, id));
         },  "birthday_list", e.Id);
@@ -63,8 +65,8 @@ public class ComponentInteractionHandler(
     {
         await ExecuteAsync(e, async () =>
         {
-            var members = await memberRepo.GetMembersAsync(e.Guild);
             if (!IdentitiesId.TryParse(e.Id, out var id) || id is null) return;
+            var members = await memberRepo.GetMembersAsync(e.Guild);
             
             await Update(e, CustomMessages.Identities(e.Guild!, members, id));
         }, "identities", e.Id);
@@ -82,5 +84,42 @@ public class ComponentInteractionHandler(
             
             await Update(e, CustomMessages.CoinFlip(member, newId));
         }, "coin_flip", e.Id);
+    }
+    
+    private async Task HandleWheelSpin(ComponentInteractionCreatedEventArgs e)
+    {
+        await ExecuteAsync(e, async () =>
+        {
+            if (!WheelSpinId.TryParse(e.Id, out var id) || id is null) return;
+            var member = await memberRepo.GetMemberAsync(e.Guild, e.User);
+            var wheel = (await wheelRepo.GetAllAsync(e.Guild)).First(w => w.Id == id.WheelId);
+            var option = wheel.Options.First(o => o.Option == id.OptionSpun);
+            
+            if (id.RemoveOption)
+            {
+                option = option with { TempRemoved = true };
+                var optionIndex = wheel.Options.FindIndex(o => o.Option == id.OptionSpun);
+                wheel.Options[optionIndex] = option;
+                await wheelRepo.SaveWheelOptionAsync(wheel, option);
+            }
+
+            if (wheel.AvailableOptions.Count == 0) return;
+            
+            var result = wheel.AvailableOptions[random.Next(wheel.AvailableOptions.Count)];
+            id = new WheelSpinId(wheel.Id, id.SpinCount + 1, result.Option, id.OptionSpun, id.RemoveOption);
+            
+            await Update(e, CustomMessages.WheelSpin(member, wheel, id));
+        }, "wheel_spin", e.Id);
+    }
+
+    private async Task HandleWheelList(ComponentInteractionCreatedEventArgs e)
+    {
+        await ExecuteAsync(e, async () =>
+        {
+            if (!WheelOptionListId.TryParse(e.Id, out var id) || id is null) return;
+            var wheel = (await wheelRepo.GetAllAsync(e.Guild)).First(w => w.Id == id.WheelId);
+            
+            await Update(e, CustomMessages.WheelOptionList(wheel, id));
+        }, "wheel_option_list", e.Id);
     }
 }

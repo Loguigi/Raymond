@@ -34,14 +34,14 @@ public sealed class ServerMemberRepository(
         var member = new ServerMember(user, guild);
         
         var memberRecord = await GetFirstAsync<ServerMemberRecord>("GetMember", 
-            new DynamicParameters(new { GuildId = (long)guild.Id, UserId = (long)user.Id }));
+            new { GuildId = (long)guild.Id, UserId = (long)user.Id });
 
         if (memberRecord is null)
         {
             await SaveMemberAsync(member);
             
             memberRecord = await GetFirstAsync<ServerMemberRecord>("GetServerMember", 
-                new DynamicParameters(new { GuildId = (long)guild.Id, UserId = (long)user.Id }));
+                new { GuildId = (long)guild.Id, UserId = (long)user.Id });
         }
 
         member.Id = memberRecord!.Id;
@@ -57,11 +57,10 @@ public sealed class ServerMemberRepository(
     public async Task<List<ServerMember>> GetMembersAsync(DiscordGuild guild)
     {
         var serverMembers = new List<ServerMember>();
-        var memberRecords = await GetAllAsync<ServerMemberRecord>("GetServerMembers", new DynamicParameters(new { GuildId = (long)guild.Id }));
-        var memberRecordsList = memberRecords.ToList();
+        var memberRecords = await GetAllAsync<ServerMemberRecord>("GetServerMembers", new { GuildId = (long)guild.Id });
         
         // Map all existing user records
-        foreach (var member in memberRecordsList)
+        foreach (var member in memberRecords)
         {
             serverMembers.Add(new ServerMember(await GetDiscordUserAsync(member.UserId), guild)
             {
