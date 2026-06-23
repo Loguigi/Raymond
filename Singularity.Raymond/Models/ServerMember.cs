@@ -21,6 +21,7 @@ public class ServerMember(DiscordUser user, DiscordGuild guild)
     public int ExpNeededForNextLevel => 2 * (int)Math.Pow(Level + 1, 2) - 2;
     public string FormattedBirthday => Birthday?.ToString("MMMM d, yyyy") ?? "N/A";
     public string FormattedNextBirthday => NextBirthday?.ToString("MMMM d, yyyy") ?? "N/A";
+    public bool HasBirthdayToday => Birthday.HasValue && Birthday.Value.Date == DateTime.Today.Date;
     public int DaysUntilBirthday => (NextBirthday?.Date - DateTime.Today.Date)?.Days ?? 0;
     
     public int Age 
