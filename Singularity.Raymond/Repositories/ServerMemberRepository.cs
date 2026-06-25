@@ -40,7 +40,7 @@ public sealed class ServerMemberRepository(
         {
             await SaveMemberAsync(member);
             
-            memberRecord = await GetFirstAsync<ServerMemberRecord>("GetServerMember", 
+            memberRecord = await GetFirstAsync<ServerMemberRecord>("GetMember", 
                 new { GuildId = (long)guild.Id, UserId = (long)user.Id });
         }
 
