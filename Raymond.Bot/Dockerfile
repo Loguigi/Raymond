@@ -5,17 +5,19 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["Singularity.Raymond/Singularity.Raymond.csproj", "Singularity.Raymond/"]
-RUN dotnet restore "Singularity.Raymond/Singularity.Raymond.csproj"
+COPY ["Raymond.Bot/Raymond.Bot.csproj", "Raymond.Bot/"]
+COPY ["Raymond.Data/Raymond.Data.csproj", "Raymond.Data/"]
+RUN --mount=type=secret,id=nuget_config,target=/root/.nuget/NuGet/NuGet.Config \
+    dotnet restore "Raymond.Bot/Raymond.Bot.csproj"
 COPY . .
-WORKDIR "/src/Singularity.Raymond"
-RUN dotnet build "./Singularity.Raymond.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/Raymond.Bot"
+RUN dotnet build "./Raymond.Bot.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Singularity.Raymond.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./Raymond.Bot.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "Singularity.Raymond.dll"]
+ENTRYPOINT ["dotnet", "Raymond.Bot.dll"]
