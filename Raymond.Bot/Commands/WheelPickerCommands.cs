@@ -1,6 +1,4 @@
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-using System.Net;
 using System.Text;
 using DSharpPlus;
 using DSharpPlus.Commands;
@@ -11,13 +9,12 @@ using DSharpPlus.Commands.Processors.SlashCommands.ArgumentModifiers;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Singularity.Raymond.Models;
-using Singularity.Raymond.Repositories;
-using Singularity.Raymond.Utilities;
-using Singularity.Shared.Discord;
-using Singularity.Shared.Utilities;
+using Raymond.Bot.Utilities;
+using Raymond.Data.Models;
+using Raymond.Data.Repositories;
+using Singularity.Discord;
 
-namespace Singularity.Raymond.Commands;
+namespace Raymond.Bot.Commands;
 
 [Command("wheel"), Description("Manage and spin custom wheel pickers"), RequireGuild]
 public class WheelPickerCommands(

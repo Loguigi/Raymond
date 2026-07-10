@@ -5,12 +5,12 @@ using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
-using Singularity.Raymond.Models;
-using Singularity.Raymond.Repositories;
-using Singularity.Raymond.Utilities;
-using Singularity.Shared.Discord;
+using Raymond.Data.Repositories;
+using Raymond.Bot.Utilities;
+using Raymond.Data.Models;
+using Singularity.Discord;
 
-namespace Singularity.Raymond.Commands;
+namespace Raymond.Bot.Commands;
 
 public class LevelCommands(
     DiscordClient client,

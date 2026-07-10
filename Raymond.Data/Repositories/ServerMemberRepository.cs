@@ -2,10 +2,10 @@ using Dapper;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
-using Singularity.Raymond.Models;
-using Singularity.Shared.Data;
+using Raymond.Data.Models;
+using Singularity.Data;
 
-namespace Singularity.Raymond.Repositories;
+namespace Raymond.Data.Repositories;
 
 public sealed class ServerMemberRepository(
     IDbConnectionFactory factory,

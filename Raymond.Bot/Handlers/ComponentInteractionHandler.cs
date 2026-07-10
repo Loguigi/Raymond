@@ -1,12 +1,12 @@
 using DSharpPlus;
 using DSharpPlus.EventArgs;
 using Microsoft.Extensions.Logging;
-using Singularity.Raymond.Models;
-using Singularity.Raymond.Repositories;
-using Singularity.Raymond.Utilities;
-using Singularity.Shared.Discord;
+using Raymond.Bot.Utilities;
+using Raymond.Data.Models;
+using Raymond.Data.Repositories;
+using Singularity.Discord;
 
-namespace Singularity.Raymond.Handlers;
+namespace Raymond.Bot.Handlers;
 
 public class ComponentInteractionHandler(
     DiscordClient client,

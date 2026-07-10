@@ -1,6 +1,7 @@
 using DSharpPlus.Entities;
 
-namespace Singularity.Raymond.Models;
+namespace Raymond.Data.Models;
+
 
 public class ServerConfig(DiscordGuild guild, DiscordChannel defaultChannel)
 {

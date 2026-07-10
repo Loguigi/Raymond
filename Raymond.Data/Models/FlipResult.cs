@@ -1,4 +1,4 @@
-namespace Singularity.Raymond.Models;
+namespace Raymond.Data.Models;
 
 public enum FlipResult
 {

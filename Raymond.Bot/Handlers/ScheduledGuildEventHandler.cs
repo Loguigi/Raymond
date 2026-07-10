@@ -1,4 +1,4 @@
-namespace Singularity.Raymond.Handlers;
+namespace Raymond.Bot.Handlers;
 
 public class ScheduledGuildEventHandler
 {

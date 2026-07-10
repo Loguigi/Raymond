@@ -1,16 +1,15 @@
 using System.ComponentModel;
-using System.Globalization;
 using DSharpPlus;
 using DSharpPlus.Commands;
 using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
-using Singularity.Raymond.Repositories;
-using Singularity.Raymond.Utilities;
-using Singularity.Shared.Discord;
+using Raymond.Data.Repositories;
+using Raymond.Bot.Utilities;
+using Singularity.Discord;
 
-namespace Singularity.Raymond.Commands;
+namespace Raymond.Bot.Commands;
 
 [Command("birthday")]
 public class BirthdayCommands(

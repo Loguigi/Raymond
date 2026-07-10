@@ -7,11 +7,10 @@ using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Commands.Processors.SlashCommands.ArgumentModifiers;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
-using Singularity.Raymond.Models;
-using Singularity.Raymond.Repositories;
-using Singularity.Shared.Discord;
+using Raymond.Data.Repositories;
+using Singularity.Discord;
 
-namespace Singularity.Raymond.Commands;
+namespace Raymond.Bot.Commands;
 
 [Command("config"), Description("Bot config for the server"), RequireGuild]
 public class ServerConfigCommands(

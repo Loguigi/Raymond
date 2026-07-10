@@ -2,10 +2,10 @@ using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using Microsoft.Extensions.Logging;
-using Singularity.Raymond.Repositories;
-using Singularity.Shared.Discord;
+using Raymond.Data.Repositories;
+using Singularity.Discord;
 
-namespace Singularity.Raymond.Handlers;
+namespace Raymond.Bot.Handlers;
 
 public class MessageCreatedHandler(
     DiscordClient client,

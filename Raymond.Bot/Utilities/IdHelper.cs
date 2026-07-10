@@ -1,7 +1,7 @@
-using Singularity.Raymond.Models;
-using Singularity.Shared.Utilities;
+using Raymond.Data.Models;
+using Singularity.Utilities;
 
-namespace Singularity.Raymond.Utilities;
+namespace Raymond.Bot.Utilities;
 
 public class IdPrefixes
 {

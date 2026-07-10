@@ -1,11 +1,11 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
-using Singularity.Raymond.Repositories;
-using Singularity.Shared.Discord;
-using Singularity.Shared.Scheduling;
+using Raymond.Data.Repositories;
+using Singularity.Discord;
+using Singularity.Scheduling;
 
-namespace Singularity.Raymond.Scheduling;
+namespace Raymond.Bot.Scheduling;
 
 public class BirthdayNotificationTask(
     DiscordClient client,

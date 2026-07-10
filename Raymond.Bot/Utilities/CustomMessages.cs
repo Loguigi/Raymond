@@ -1,9 +1,9 @@
 using DSharpPlus.Entities;
-using Singularity.Raymond.Models;
-using Singularity.Shared.Discord;
-using Singularity.Shared.Utilities;
+using Raymond.Data.Models;
+using Singularity.Discord;
+using Singularity.Utilities;
 
-namespace Singularity.Raymond.Utilities;
+namespace Raymond.Bot.Utilities;
 
 public static class CustomMessages
 {

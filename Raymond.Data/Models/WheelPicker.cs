@@ -1,6 +1,6 @@
 using DSharpPlus.Entities;
 
-namespace Singularity.Raymond.Models;
+namespace Raymond.Data.Models;
 
 public record WheelOption(string Option, bool TempRemoved);
 

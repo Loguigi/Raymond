@@ -1,9 +1,9 @@
 ﻿using DSharpPlus;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Singularity.Raymond.Repositories;
-using Singularity.Shared.Bot;
-using Singularity.Shared.Scheduling;
+using Raymond.Data.Repositories;
+using Singularity.Bot;
+using Singularity.Scheduling;
 
 var builder = Host.CreateApplicationBuilder();
 
