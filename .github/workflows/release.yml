@@ -1,0 +1,106 @@
+name: Raymond Prod
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: GHCR Login
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/docker-config
+        run: |
+          mkdir -p "$DOCKER_CONFIG"
+          mkdir -p "$DOCKER_CONFIG/cli-plugins"
+          for plugin in docker-buildx docker-compose; do
+            if [ -x "$HOME/.docker/cli-plugins/$plugin" ]; then
+              ln -sf "$HOME/.docker/cli-plugins/$plugin" "$DOCKER_CONFIG/cli-plugins/$plugin"
+            fi
+          done
+          AUTH=$(printf '%s:%s' "${{ secrets.GHCR_USERNAME }}" "${{ secrets.GHCR_PAT }}" | base64 | tr -d '\n')
+          
+          cat > "$DOCKER_CONFIG/config.json" <<EOF
+          {
+            "auths": {
+              "ghcr.io": {
+                "auth": "$AUTH"
+              }
+            }
+          }
+          EOF
+
+      - name: Prepare NuGet config secret
+        run: cp "$HOME/.nuget/NuGet/NuGet.Config" "${{ runner.temp }}/NuGet.Config"
+
+      - name: Build and Push Version
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/docker-config
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          file: Raymond.Bot/Dockerfile
+          push: true
+          secret-files: |
+            nuget_config=${{ runner.temp }}/NuGet.Config
+          tags: ghcr.io/loguigi/raymond:${{ github.ref_name }}
+          
+      - name: Build and Push Latest
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/docker-config
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          file: Raymond.Bot/Dockerfile
+          push: true
+          secret-files: |
+            nuget_config=${{ runner.temp }}/NuGet.Config
+          tags: ghcr.io/loguigi/raymond:latest
+
+
+  deploy:
+    needs: build
+    runs-on: [self-hosted]
+
+    steps:
+      - name: GHCR Login
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/docker-config
+        run: |
+          mkdir -p "$DOCKER_CONFIG"
+          mkdir -p "$DOCKER_CONFIG/cli-plugins"
+          for plugin in docker-buildx docker-compose; do
+            if [ -x "$HOME/.docker/cli-plugins/$plugin" ]; then
+              ln -sf "$HOME/.docker/cli-plugins/$plugin" "$DOCKER_CONFIG/cli-plugins/$plugin"
+            fi
+          done
+          AUTH=$(printf '%s:%s' "${{ secrets.GHCR_USERNAME }}" "${{ secrets.GHCR_PAT }}" | base64 | tr -d '\n')
+
+          cat > "$DOCKER_CONFIG/config.json" <<EOF
+          {
+            "auths": {
+              "ghcr.io": {
+                "auth": "$AUTH"
+              }
+            }
+          }
+          EOF
+
+      - name: Deploy Dad
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/docker-config
+        run: |
+          cd ~/compose/discord
+          docker compose pull raymond.prod
+          docker compose up -d raymond.prod

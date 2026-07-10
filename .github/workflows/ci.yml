@@ -2,11 +2,8 @@ name: Raymond Prod
 
 on:
   push:
-    branches: ["master"]
-    paths:
-      - "Raymond.Bot/**"
-      - "Raymond.Data/**"
-      - ".github/workflows/prod.yml"
+    branches:
+      - master
 
 jobs:
   build:
@@ -57,41 +54,3 @@ jobs:
           secret-files: |
             nuget_config=${{ runner.temp }}/NuGet.Config
           tags: ghcr.io/loguigi/raymond:latest
-
-
-  deploy:
-    needs: build
-    if: github.event_name == 'push'
-    runs-on: [self-hosted]
-
-    steps:
-      - name: GHCR Login
-        env:
-          DOCKER_CONFIG: ${{ runner.temp }}/docker-config
-        run: |
-          mkdir -p "$DOCKER_CONFIG"
-          mkdir -p "$DOCKER_CONFIG/cli-plugins"
-          for plugin in docker-buildx docker-compose; do
-            if [ -x "$HOME/.docker/cli-plugins/$plugin" ]; then
-              ln -sf "$HOME/.docker/cli-plugins/$plugin" "$DOCKER_CONFIG/cli-plugins/$plugin"
-            fi
-          done
-          AUTH=$(printf '%s:%s' "${{ secrets.GHCR_USERNAME }}" "${{ secrets.GHCR_PAT }}" | base64 | tr -d '\n')
-
-          cat > "$DOCKER_CONFIG/config.json" <<EOF
-          {
-            "auths": {
-              "ghcr.io": {
-                "auth": "$AUTH"
-              }
-            }
-          }
-          EOF
-
-      - name: Deploy Dad
-        env:
-          DOCKER_CONFIG: ${{ runner.temp }}/docker-config
-        run: |
-          cd ~/compose/discord
-          docker compose pull raymond.prod
-          docker compose up -d raymond.prod
