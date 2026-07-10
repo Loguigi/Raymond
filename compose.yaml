@@ -1,0 +1,7 @@
+﻿services:
+  raymond:
+    image: raymond
+    build:
+      context: .
+      dockerfile: Raymond/Dockerfile
+
