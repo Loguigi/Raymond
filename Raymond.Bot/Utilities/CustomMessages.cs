@@ -1,7 +1,7 @@
 using DSharpPlus.Entities;
 using Raymond.Data.Models;
-using Singularity.Discord;
-using Singularity.Utilities;
+using Artifice.Discord;
+using Artifice.Utilities;
 
 namespace Raymond.Bot.Utilities;
 

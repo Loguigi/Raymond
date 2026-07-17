@@ -7,7 +7,7 @@ using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
 using Raymond.Data.Repositories;
 using Raymond.Bot.Utilities;
-using Singularity.Discord;
+using Artifice.Discord;
 
 namespace Raymond.Bot.Commands;
 

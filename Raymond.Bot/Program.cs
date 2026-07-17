@@ -2,8 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Raymond.Data.Repositories;
-using Singularity.Bot;
-using Singularity.Scheduling;
+using Artifice.Bot;
+using Artifice.Scheduling;
 
 var builder = Host.CreateApplicationBuilder();
 

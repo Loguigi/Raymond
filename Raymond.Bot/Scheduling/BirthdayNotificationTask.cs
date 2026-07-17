@@ -2,8 +2,8 @@ using DSharpPlus;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
 using Raymond.Data.Repositories;
-using Singularity.Discord;
-using Singularity.Scheduling;
+using Artifice.Discord;
+using Artifice.Scheduling;
 
 namespace Raymond.Bot.Scheduling;
 

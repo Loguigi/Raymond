@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Raymond.Bot.Utilities;
 using Raymond.Data.Models;
 using Raymond.Data.Repositories;
-using Singularity.Discord;
+using Artifice.Discord;
 
 namespace Raymond.Bot.Commands;
 

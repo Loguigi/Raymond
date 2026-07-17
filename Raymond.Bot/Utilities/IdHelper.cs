@@ -1,5 +1,5 @@
 using Raymond.Data.Models;
-using Singularity.Utilities;
+using Artifice.Utilities;
 
 namespace Raymond.Bot.Utilities;
 

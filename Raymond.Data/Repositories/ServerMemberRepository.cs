@@ -3,7 +3,7 @@ using DSharpPlus;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
 using Raymond.Data.Models;
-using Singularity.Data;
+using Artifice.Data;
 
 namespace Raymond.Data.Repositories;
 
