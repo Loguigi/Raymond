@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Raymond.Data.Repositories;
 using Artifice.Bot;
 using Artifice.Scheduling;
+using Raymond.Data.Services;
 
 var builder = Host.CreateApplicationBuilder();
 
@@ -17,9 +18,12 @@ builder.AddDiscordBot(
 
 builder.Services.AddScheduledTasksFromAssembly(typeof(Program).Assembly);
 
+builder.Services.AddScoped<DockerService>();
+
 builder.Services.AddScoped<ServerMemberRepository>();
 builder.Services.AddScoped<ServerConfigRepository>();
 builder.Services.AddScoped<WheelPickerRepository>();
+builder.Services.AddScoped<MinecraftRepository>();
 
 builder.Services.AddSingleton<Random>();
 
