@@ -17,7 +17,6 @@ public class MinecraftRepository(
         public long GuildId { get; set; }
         public string ContainerName { get; set; } = string.Empty;
         public string Ip { get; set; } = string.Empty;
-        public int Port { get; set; }
         public string Name { get; set; } = string.Empty;
         public string ImageUrl { get; set; } = string.Empty;
         public int MaxPlayers { get; set; }
