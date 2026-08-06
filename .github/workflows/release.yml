@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted]
 
     permissions:
       contents: read
@@ -42,21 +42,8 @@ jobs:
       - name: Prepare NuGet config secret
         run: cp "$HOME/.nuget/NuGet/NuGet.Config" "${{ runner.temp }}/NuGet.Config"
 
-      - name: Build and Push Version
-        uses: docker/build-push-action@v6
-        env:
-          DOCKER_CONFIG: ${{ runner.temp }}/docker-config
-        with:
-          builder: ${{ steps.buildx.outputs.name }}
-          context: .
-          file: Raymond.Bot/Dockerfile
-          push: true
-          secret-files: |
-            nuget_config=${{ runner.temp }}/NuGet.Config
-          tags: ghcr.io/loguigi/raymond:${{ github.ref_name }}
-          
-      - name: Build and Push Latest
-        uses: docker/build-push-action@v6
+      - name: Build and Push
+        uses: docker/build-push-action@v7
         env:
           DOCKER_CONFIG: ${{ runner.temp }}/docker-config
         with:
@@ -71,6 +58,7 @@ jobs:
 
   deploy:
     needs: build
+    if: github.event_name == 'push'
     runs-on: [self-hosted]
 
     steps:
