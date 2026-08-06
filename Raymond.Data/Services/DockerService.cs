@@ -55,6 +55,7 @@ public class DockerService
     public async Task<string> TryExecuteAsync(string containerName, string command)
     {
         if (_client is null) return "Docker client not running";
+        var commands = command.Split(' ');
         
         var container = await GetContainer(containerName);
         if (container is null) return "Container not found";
@@ -66,10 +67,7 @@ public class DockerService
                 AttachStdin = false,
                 AttachStdout = true,
                 AttachStderr = true,
-                Cmd =
-                [
-                    command
-                ]
+                Cmd = commands
             });
 
         using var stream = await _client.Exec.StartContainerExecAsync(
