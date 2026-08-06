@@ -16,6 +16,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Configure Docker socket
+        run: |
+          if [ -S "$HOME/.orbstack/run/docker.sock" ]; then
+            echo "DOCKER_HOST=unix://$HOME/.orbstack/run/docker.sock" >> "$GITHUB_ENV"
+          else
+            echo "DOCKER_HOST=unix:///var/run/docker.sock" >> "$GITHUB_ENV"
+          fi
+
       - name: GHCR Login
         env:
           DOCKER_CONFIG: ${{ runner.temp }}/docker-config
@@ -62,6 +70,14 @@ jobs:
     runs-on: [self-hosted]
 
     steps:
+      - name: Configure Docker socket
+        run: |
+          if [ -S "$HOME/.orbstack/run/docker.sock" ]; then
+            echo "DOCKER_HOST=unix://$HOME/.orbstack/run/docker.sock" >> "$GITHUB_ENV"
+          else
+            echo "DOCKER_HOST=unix:///var/run/docker.sock" >> "$GITHUB_ENV"
+          fi
+
       - name: GHCR Login
         env:
           DOCKER_CONFIG: ${{ runner.temp }}/docker-config
