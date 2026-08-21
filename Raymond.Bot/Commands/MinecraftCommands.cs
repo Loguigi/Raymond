@@ -125,12 +125,6 @@ public class MinecraftCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            if (!IsAdminAuthorized(ctx.User))
-            {
-                await Send(ctx, Embeds.Error("You are not authorized to use this command."), true);
-                return;
-            }
-            
             var info = await mcRepo.GetInfoAsync(ctx.Guild!);
             var succeeded = await mcRepo.StartServerAsync(info);
             
@@ -162,7 +156,7 @@ public class MinecraftCommands(
             }
             
             var info = await mcRepo.GetInfoAsync(ctx.Guild!);
-            await mcRepo.StopServerAsync(info);
+            var success = await mcRepo.StopServerAsync(info);
             
             var embed = new E
             {
@@ -172,7 +166,7 @@ public class MinecraftCommands(
                 Color = DiscordColor.DarkGreen,
                 Title = info.Name,
                 Thumbnail = info.ImageUrl,
-                Desc = "Shutting down server",
+                Desc = success ? "Shutting down server" : "Failed to shut down server",
                 Timestamp = true,
             };
 

@@ -26,7 +26,7 @@ public class DockerService
     public async Task<string> GetContainerStatusAsync(string containerName)
     {
         var container = await GetContainer(containerName);
-        return container is null ? "dead" : container.State;
+        return container is null ? "stopped" : container.State;
     }
 
     public async Task<bool> TryStartContainerAsync(string containerName)
@@ -86,15 +86,22 @@ public class DockerService
     
     private async Task<ContainerListResponse?> GetContainer(string containerName)
     {
-        if (_client is null) return null;
+        try
+        {
+            if (_client is null) return null;
         
-        var containers =
-            await _client.Containers.ListContainersAsync(new ContainersListParameters
-            {
-                All = true
-            });
+            var containers =
+                await _client.Containers.ListContainersAsync(new ContainersListParameters
+                {
+                    All = true
+                });
 
-        return containers.FirstOrDefault(c =>
-            c.Names.Any(n => string.Equals(n.TrimStart('/'), containerName, StringComparison.OrdinalIgnoreCase)));
+            return containers.FirstOrDefault(c =>
+                c.Names.Any(n => string.Equals(n.TrimStart('/'), containerName, StringComparison.OrdinalIgnoreCase)));
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

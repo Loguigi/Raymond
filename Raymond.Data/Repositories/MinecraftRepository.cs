@@ -66,10 +66,10 @@ public class MinecraftRepository(
         return await docker.TryStartContainerAsync(info.ContainerName);
     }
 
-    public async Task StopServerAsync(MinecraftInfo info)
+    public async Task<bool> StopServerAsync(MinecraftInfo info)
     {
         var status = await GetServerStatusAsync(info);
-        if (status != "running") return;
+        if (status != "running") return false;
         
         for (var i = 10; i > 0; i--)
         {
@@ -79,6 +79,8 @@ public class MinecraftRepository(
         
         await ExecuteMinecraftCommand(info, "say GOODBYE");
         await ExecuteMinecraftCommand(info, "stop");
+
+        return true;
     }
 
     public async Task<string> GetPlayerListAsync(MinecraftInfo info)
