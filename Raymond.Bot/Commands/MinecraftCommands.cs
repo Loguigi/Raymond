@@ -133,23 +133,28 @@ public class MinecraftCommands(
         await ExecuteAsync(ctx, async () =>
         {
             var info = await mcRepo.GetInfoAsync(ctx.Guild!);
-            var succeeded = await mcRepo.StartServerAsync(info);
+
+            if (await mcRepo.IsServerOnline(info))
+            {
+                await Send(ctx, Embeds.Error("Server is already online"), true);
+                return;
+            }
+            
+            await mcRepo.StartServerAsync(info);
             
             var embed = new E
             {
                 Author = "Minecraft",
                 AuthorImg =
                     "https://cdn.discordapp.com/attachments/1129734051016740886/1534733572664070395/image.png?ex=6a753385&is=6a73e205&hm=19e2c78dc6c2694649dbf8498c1621cb1b6d378f0638da993b7bcd6860e7b00a&",
-                Color = succeeded ? DiscordColor.DarkGreen : DiscordColor.DarkRed,
+                Color = DiscordColor.Yellow,
                 Title = info.Name,
                 Thumbnail = info.ImageUrl,
-                Desc = succeeded ? "Starting server..." : "Server is already running",
+                Desc = "Starting server...",
                 Timestamp = true,
             };
 
             await Send(ctx, embed);
-
-            if (!succeeded) return;
             await Task.Delay(TimeSpan.FromSeconds(10));
             var online = await mcRepo.IsServerOnline(info);
             
@@ -173,7 +178,7 @@ public class MinecraftCommands(
             
             var info = await mcRepo.GetInfoAsync(ctx.Guild!);
             
-            if (await mcRepo.IsServerOnline(info))
+            if (!await mcRepo.IsServerOnline(info))
             {
                 await Send(ctx, Embeds.Error("Server is already offline"), true);
                 return;
@@ -184,7 +189,7 @@ public class MinecraftCommands(
                 Author = "Minecraft",
                 AuthorImg =
                     "https://cdn.discordapp.com/attachments/1129734051016740886/1534733572664070395/image.png?ex=6a753385&is=6a73e205&hm=19e2c78dc6c2694649dbf8498c1621cb1b6d378f0638da993b7bcd6860e7b00a&",
-                Color = DiscordColor.DarkGreen,
+                Color = DiscordColor.Yellow,
                 Title = info.Name,
                 Thumbnail = info.ImageUrl,
                 Desc = "Shutting down server...",
