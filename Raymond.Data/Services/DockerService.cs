@@ -59,6 +59,8 @@ public class DockerService
         
         var container = await GetContainer(containerName);
         if (container is null) return "Container not found";
+        if (!container.State.Equals("running", StringComparison.OrdinalIgnoreCase))
+            return "Container not running";
         
         var exec = await _client.Exec.CreateContainerExecAsync(
             container.ID,

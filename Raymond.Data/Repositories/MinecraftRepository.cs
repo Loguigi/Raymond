@@ -104,6 +104,9 @@ public class MinecraftRepository(
 
     private async Task<string> ExecuteMinecraftCommand(MinecraftInfo info, string command)
     {
+        if (!(await docker.GetContainerStatusAsync(info.ContainerName)).Equals("running", StringComparison.OrdinalIgnoreCase))
+            return string.Empty;
+
         return (await docker.TryExecuteAsync(info.ContainerName, $"rcon-cli {command}"))
             .Replace("\e[0m", string.Empty).Replace("[0m", string.Empty);
     }
