@@ -34,7 +34,8 @@ public class DockerService
         if (_client is null) return false;
         
         var container = await GetContainer(containerName);
-        if (container is null) return false;
+        if (container is null || container.State.Equals("running", StringComparison.OrdinalIgnoreCase))
+            return false;
         
         await _client.Containers.StartContainerAsync(container.ID, new ContainerStartParameters());
         return true;
