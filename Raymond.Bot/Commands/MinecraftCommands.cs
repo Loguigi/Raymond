@@ -26,7 +26,7 @@ public class MinecraftCommands(
 
             List<EField> fields =
             [
-                new("Status", await mcRepo.GetServerStatusAsync(info), true),
+                new("Status", await mcRepo.IsServerOnline(info) ? "🟢 Online" : "🔴 Offline", true),
                 new("Players", $"{players.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length} / {info.MaxPlayers}", true),
                 new("IP", $"{info.Ip}", true),
             ];
@@ -96,6 +96,13 @@ public class MinecraftCommands(
             }
             
             var info = await mcRepo.GetInfoAsync(ctx.Guild!);
+
+            if (!await mcRepo.IsServerOnline(info))
+            {
+                await Send(ctx, Embeds.Error("Server is offline"), true);
+                return;
+            }
+            
             var output = await mcRepo.ExecuteCommandAsync(info, command);
 
             if (string.IsNullOrWhiteSpace(output))
@@ -133,14 +140,23 @@ public class MinecraftCommands(
                 Author = "Minecraft",
                 AuthorImg =
                     "https://cdn.discordapp.com/attachments/1129734051016740886/1534733572664070395/image.png?ex=6a753385&is=6a73e205&hm=19e2c78dc6c2694649dbf8498c1621cb1b6d378f0638da993b7bcd6860e7b00a&",
-                Color = DiscordColor.DarkGreen,
+                Color = succeeded ? DiscordColor.DarkGreen : DiscordColor.DarkRed,
                 Title = info.Name,
                 Thumbnail = info.ImageUrl,
-                Desc = succeeded ? "Starting server" : "Failed to start server",
+                Desc = succeeded ? "Starting server..." : "Server is already running",
                 Timestamp = true,
             };
 
             await Send(ctx, embed);
+
+            if (!succeeded) return;
+            await Task.Delay(TimeSpan.FromSeconds(10));
+            var online = await mcRepo.IsServerOnline(info);
+            
+            embed.Desc = online ? "Server started successfully" : "Failed to start server";
+            embed.Color = online ? DiscordColor.DarkGreen : DiscordColor.DarkRed;
+
+            await FollowUp(ctx, embed);
         }, "mc start");
     }
     
@@ -156,7 +172,12 @@ public class MinecraftCommands(
             }
             
             var info = await mcRepo.GetInfoAsync(ctx.Guild!);
-            var success = await mcRepo.StopServerAsync(info);
+            
+            if (await mcRepo.IsServerOnline(info))
+            {
+                await Send(ctx, Embeds.Error("Server is already offline"), true);
+                return;
+            }
             
             var embed = new E
             {
@@ -166,11 +187,19 @@ public class MinecraftCommands(
                 Color = DiscordColor.DarkGreen,
                 Title = info.Name,
                 Thumbnail = info.ImageUrl,
-                Desc = success ? "Shutting down server" : "Failed to shut down server",
+                Desc = "Shutting down server...",
                 Timestamp = true,
             };
-
+            
             await Send(ctx, embed);
+            await mcRepo.StopServerAsync(info);
+            await Task.Delay(TimeSpan.FromSeconds(15));
+            
+            var online = await mcRepo.IsServerOnline(info);
+            embed.Desc = online ? "Fail: Server is still online" : "Server is offline";
+            embed.Color = online ? DiscordColor.DarkRed : DiscordColor.DarkGreen;
+            
+            await FollowUp(ctx, embed);
         }, "mc stop");
     }
 
