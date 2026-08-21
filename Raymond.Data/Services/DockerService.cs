@@ -29,6 +29,17 @@ public class DockerService
         return container is null ? "stopped" : container.State;
     }
 
+    public async Task<bool> IsContainerOnline(string containerName)
+    {
+        if (_client is null) return false;
+        
+        var container = await GetContainer(containerName);
+        if (container is null || !container.State.Equals("running", StringComparison.OrdinalIgnoreCase))
+            return false;
+        
+        return true;
+    }
+
     public async Task<bool> TryStartContainerAsync(string containerName)
     {
         if (_client is null) return false;

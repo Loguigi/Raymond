@@ -58,18 +58,25 @@ public class MinecraftRepository(
     
     public async Task<string> GetServerStatusAsync(MinecraftInfo info)
     {
-        return await docker.GetContainerStatusAsync(info.ContainerName);
+        var dockerStatus = await docker.GetContainerStatusAsync(info.ContainerName);
+
+        return dockerStatus switch
+        {
+            "running" => "🟢Online",
+            _ => "🔴Offline",
+        };
     }
 
     public async Task<bool> StartServerAsync(MinecraftInfo info)
     {
+        if (await docker.IsContainerOnline(info.ContainerName)) return false;
+        
         return await docker.TryStartContainerAsync(info.ContainerName);
     }
 
     public async Task<bool> StopServerAsync(MinecraftInfo info)
     {
-        var status = await GetServerStatusAsync(info);
-        if (status != "running") return false;
+        if (!await docker.IsContainerOnline(info.ContainerName)) return false;
         
         for (var i = 10; i > 0; i--)
         {
