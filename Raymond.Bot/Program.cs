@@ -1,6 +1,7 @@
 ﻿using DSharpPlus;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Raymond.Bot;
 using Raymond.Bot.Discord;
 using Raymond.Data;
 using Raymond.Shared.Extensions;
@@ -20,9 +21,11 @@ builder.Services.AddDiscordBot(
     typeof(Program).Assembly);
 builder.Services.AddHostedService<BotHostedService>();
 builder.Services.AddBotLogging();
+builder.Services.AddDataRepositories();
+builder.Services.AddTaskScheduler();
+
 
 builder.Services.AddScoped<DockerService>();
-builder.Services.AddDataRepositories();
 builder.Services.AddSingleton<Random>();
 
 var host = builder.Build();

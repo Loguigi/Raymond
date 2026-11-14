@@ -7,10 +7,12 @@ using DSharpPlus.Commands.Processors.TextCommands.Parsing;
 using DSharpPlus.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Raymond.Bot.Discord;
+using Raymond.Bot.Scheduling;
 
-namespace Raymond.Bot.Discord;
+namespace Raymond.Bot;
 
-public static class DiscordExtensions
+public static class ServiceCollectionExtensions
 {
     extension(IServiceCollection services)
     {
@@ -62,11 +64,26 @@ public static class DiscordExtensions
 #if DEBUG
                 logging.SetMinimumLevel(LogLevel.Debug);
 #else
-            logging.SetMinimumLevel(LogLevel.Warning);
+                logging.SetMinimumLevel(LogLevel.Warning);
 #endif
             
                 logging.AddConsole();
             });
+        }
+
+        public void AddTaskScheduler()
+        {
+            services.AddOptions<SchedulingOptions>().BindConfiguration(SchedulingOptions.SectionName);
+            services.AddHostedService<TaskSchedulerService>();
+            
+            var taskTypes = typeof(Program).Assembly.GetTypes()
+                .Where(t => t is { IsClass: true, IsAbstract: false })
+                .Where(t => typeof(IScheduledTask).IsAssignableFrom(t));
+
+            foreach (var taskType in taskTypes)
+            {
+                services.AddScoped(typeof(IScheduledTask), taskType);
+            }
         }
     }
 }

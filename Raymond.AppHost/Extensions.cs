@@ -17,10 +17,17 @@ public static class Extensions
         var token = builder.AddParameter("raymond-token", true);
         var adminId = builder.AddParameter("discord-admin-id", true);
 
+        var timezone = builder.AddParameter("scheduling-timezone");
+        var birthdaysCron = builder.AddParameter("scheduling-birthdays");
+        var guildEventsCron = builder.AddParameter("scheduling-guild-events");
+
         return bot
             .WithReference(sql)
             .WithEnvironment("RaymondToken", token)
             .WithEnvironment("AdminId", adminId)
+            .WithEnvironment("Scheduling__Timezone", timezone)
+            .WithEnvironment("Scheduling__Birthdays", birthdaysCron)
+            .WithEnvironment("Scheduling__GuildEvents", guildEventsCron)
             .PublishAsDockerComposeService(UnlessStopped);
     }
 }
