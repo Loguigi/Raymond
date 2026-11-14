@@ -11,10 +11,10 @@ namespace Raymond.Data.Repositories;
 public interface IServerMemberRepository
 {
     Task<ServerMember> GetMemberAsync(DiscordGuild guild, DiscordUser user, CancellationToken ct = default);
-    Task<List<ServerMember>> GetMembersAsync(DiscordGuild guild,  CancellationToken ct = default);
-    Task SaveMemberAsync(ServerMember member,  CancellationToken ct = default);
-    Task<bool> GrantExp(ServerMember member,  CancellationToken ct = default);
-    ServerMember GetNextBirthday(List<ServerMember> members);
+    Task<List<ServerMember>> GetMembersAsync(DiscordGuild guild, CancellationToken ct = default);
+    Task SaveMemberAsync(ServerMember member, CancellationToken ct = default);
+    Task<bool> GrantExp(ServerMember member, CancellationToken ct = default);
+    ServerMember? GetNextBirthday(List<ServerMember> members);
 
 }
 
@@ -113,10 +113,13 @@ public sealed class SqlServerMemberRepository(
         }
         
         // Calculate level rankings
-        serverMembers = serverMembers
-            .Where(x => x.Active)
-            .OrderByDescending(x => x.Level)
-            .ThenByDescending(y => y.Experience).ToList();
+        serverMembers =
+        [
+            .. serverMembers
+                .Where(x => x.Active)
+                .OrderByDescending(x => x.Level)
+                .ThenByDescending(y => y.Experience)
+        ];
 
         for (var i = 0; i < serverMembers.Count; i++)
         {
@@ -156,16 +159,19 @@ public sealed class SqlServerMemberRepository(
             leveledUp = true;
             logger.LogDebug("Member {UserId} leveled up to {Level}", member.UserId, member.Level);
         }
-        await SaveMemberAsync(member);
+        await SaveMemberAsync(member, ct).ConfigureAwait(false);
         
         return leveledUp;
     }
     
-    public ServerMember GetNextBirthday(List<ServerMember> members)
+    public ServerMember? GetNextBirthday(List<ServerMember> members)
     {
-        members = members.Where(x => x.NextBirthday.HasValue).OrderBy(x => x.NextBirthday).ToList();
+        if (!members.Any(m => m.Birthday.HasValue)) return null;
+        
+        members = [.. members.Where(x => x.NextBirthday.HasValue).OrderBy(x => x.NextBirthday)];
         var nextBirthday = members.First();
         logger.LogDebug("Next birthday is {User} on {Date}", nextBirthday.UserId, nextBirthday.NextBirthday);
+        
         return nextBirthday;
     }
     

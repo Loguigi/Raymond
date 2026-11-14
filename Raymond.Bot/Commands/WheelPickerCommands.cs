@@ -296,7 +296,7 @@ public class WheelAutoCompleteProvider : IAutoCompleteProvider
 {
     public async ValueTask<IEnumerable<DiscordAutoCompleteChoice>> AutoCompleteAsync(AutoCompleteContext context)
     {
-        var wheelManager = context.ServiceProvider.GetRequiredService<SqlWheelPickerRepository>();
+        var wheelManager = context.ServiceProvider.GetRequiredService<IWheelPickerRepository>();
         var wheels = await wheelManager.GetAllAsync(context.Guild!);
 
         var input = context.UserInput?.ToLower() ?? string.Empty;

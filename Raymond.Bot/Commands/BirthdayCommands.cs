@@ -26,7 +26,7 @@ public class BirthdayCommands(
             if (await IsBot(ctx, user)) return;
 
             var member = await memberRepo.GetMemberAsync(ctx.Guild!, user);
-            if (member?.Birthday == null)
+            if (!member.Birthday.HasValue)
             {
                 await Send(ctx, Embeds.Error("No birthday found."), true);
                 return;
@@ -52,6 +52,12 @@ public class BirthdayCommands(
         {
             var members = await memberRepo.GetMembersAsync(ctx.Guild!);
             var nextBirthdayMember = memberRepo.GetNextBirthday(members);
+
+            if (nextBirthdayMember == null)
+            {
+                await Send(ctx, Embeds.Error("No birthday found."), true);
+                return;
+            }
             
             var daysText = nextBirthdayMember.DaysUntilBirthday switch
             {
