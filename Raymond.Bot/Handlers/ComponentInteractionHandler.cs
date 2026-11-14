@@ -4,14 +4,14 @@ using Microsoft.Extensions.Logging;
 using Raymond.Bot.Utilities;
 using Raymond.Data.Models;
 using Raymond.Data.Repositories;
-using Artifice.Discord;
+using BaseHandler = Raymond.Bot.Discord.BaseHandler;
 
 namespace Raymond.Bot.Handlers;
 
 public class ComponentInteractionHandler(
     DiscordClient client,
-    ServerMemberRepository memberRepo,
-    WheelPickerRepository wheelRepo,
+    SqlServerMemberRepository memberRepo,
+    SqlWheelPickerRepository wheelRepo,
     Random random,
     ILogger<ComponentInteractionHandler> logger)
     : BaseHandler(client, logger), IEventHandler<ComponentInteractionCreatedEventArgs>

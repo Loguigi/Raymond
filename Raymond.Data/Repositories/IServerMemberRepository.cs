@@ -3,15 +3,26 @@ using DSharpPlus;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
 using Raymond.Data.Models;
-using Artifice.Data;
+using Raymond.Data.Sql;
+using Raymond.Shared.Entities;
 
 namespace Raymond.Data.Repositories;
 
-public sealed class ServerMemberRepository(
+public interface IServerMemberRepository
+{
+    Task<ServerMember> GetMemberAsync(DiscordGuild guild, DiscordUser user, CancellationToken ct = default);
+    Task<List<ServerMember>> GetMembersAsync(DiscordGuild guild,  CancellationToken ct = default);
+    Task SaveMemberAsync(ServerMember member,  CancellationToken ct = default);
+    Task<bool> GrantExp(ServerMember member,  CancellationToken ct = default);
+    ServerMember GetNextBirthday(List<ServerMember> members);
+
+}
+
+public sealed class SqlServerMemberRepository(
     IDbConnectionFactory factory,
     DiscordClient client,
-    ILogger<ServerMemberRepository> logger) 
-    : BaseRepository(logger, factory)
+    ILogger<SqlServerMemberRepository> logger) 
+    : BaseSqlRepository(logger, factory), IServerMemberRepository
 {
     private const int ExpGain = 1;
 
@@ -27,7 +38,7 @@ public sealed class ServerMemberRepository(
         public bool Active { get; set; }
     }
 
-    public async Task<ServerMember> GetMemberAsync(DiscordGuild guild, DiscordUser user)
+    public async Task<ServerMember> GetMemberAsync(DiscordGuild guild, DiscordUser user, CancellationToken ct = default)
     {
         if (user.IsBot) throw new Exception("Bot passed in as user");
 
@@ -38,7 +49,7 @@ public sealed class ServerMemberRepository(
 
         if (memberRecord is null)
         {
-            await SaveMemberAsync(member);
+            await SaveMemberAsync(member, ct).ConfigureAwait(false);
             
             memberRecord = await GetFirstAsync<ServerMemberRecord>("GetMember", 
                 new { GuildId = (long)guild.Id, UserId = (long)user.Id });
@@ -54,7 +65,7 @@ public sealed class ServerMemberRepository(
         return member;
     }
 
-    public async Task<List<ServerMember>> GetMembersAsync(DiscordGuild guild)
+    public async Task<List<ServerMember>> GetMembersAsync(DiscordGuild guild, CancellationToken ct = default)
     {
         var serverMembers = new List<ServerMember>();
         var memberRecords = await GetAllAsync<ServerMemberRecord>("GetServerMembers", new { GuildId = (long)guild.Id });
@@ -85,7 +96,7 @@ public sealed class ServerMemberRepository(
                 if (member.Active) continue;
 
                 member.Active = true;
-                await SaveMemberAsync(member);
+                await SaveMemberAsync(member, ct).ConfigureAwait(false);
             }
             else
             {
@@ -94,9 +105,9 @@ public sealed class ServerMemberRepository(
                     Active = true
                 };
                 
-                await SaveMemberAsync(newMember);
+                await SaveMemberAsync(newMember, ct).ConfigureAwait(false);
                 
-                newMember = await GetMemberAsync(guild, guildMember);
+                newMember = await GetMemberAsync(guild, guildMember, ct).ConfigureAwait(false);
                 serverMembers.Add(newMember);
             }
         }
@@ -116,7 +127,7 @@ public sealed class ServerMemberRepository(
         return serverMembers;
     }
     
-    public async Task SaveMemberAsync(ServerMember member)
+    public async Task SaveMemberAsync(ServerMember member, CancellationToken ct = default)
     {
         var record = new ServerMemberRecord
         {
@@ -133,7 +144,7 @@ public sealed class ServerMemberRepository(
         await ExecuteAsync("SaveServerMember", new DynamicParameters(record));
     }
     
-    public async Task<bool> GrantExp(ServerMember member)
+    public async Task<bool> GrantExp(ServerMember member, CancellationToken ct = default)
     {
         bool leveledUp = false;
 

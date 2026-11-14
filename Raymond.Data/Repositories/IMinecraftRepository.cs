@@ -1,16 +1,28 @@
-using Artifice.Data;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
 using Raymond.Data.Models;
-using Raymond.Data.Services;
+using Raymond.Data.Sql;
+using Raymond.Shared.Entities;
+using Raymond.Shared.Services;
 
 namespace Raymond.Data.Repositories;
 
-public class MinecraftRepository(
+public interface IMinecraftRepository
+{
+    Task<MinecraftInfo> GetInfoAsync(DiscordGuild guild, CancellationToken ct = default);
+    Task SaveInfoAsync(MinecraftInfo info, CancellationToken ct = default);
+    Task<bool> IsServerOnline(MinecraftInfo info, CancellationToken ct = default);
+    Task<bool> StartServerAsync(MinecraftInfo info, CancellationToken ct = default);
+    Task<bool> StopServerAsync(MinecraftInfo info, CancellationToken ct = default);
+    Task<string> GetPlayerListAsync(MinecraftInfo info, CancellationToken ct = default);
+    Task<string> ExecuteCommandAsync(MinecraftInfo info, string command, CancellationToken ct = default);
+}
+
+public class SqlMinecraftRepository(
     DockerService docker, 
     IDbConnectionFactory factory, 
-    ILogger<MinecraftRepository> logger)
-    : BaseRepository(logger, factory)
+    ILogger<SqlMinecraftRepository> logger)
+    : BaseSqlRepository(logger, factory), IMinecraftRepository
 {
     private sealed class MinecraftInfoRecord
     {
@@ -23,7 +35,7 @@ public class MinecraftRepository(
         public string? Mods { get; set; }
     }
 
-    public async Task<MinecraftInfo> GetInfoAsync(DiscordGuild guild)
+    public async Task<MinecraftInfo> GetInfoAsync(DiscordGuild guild, CancellationToken ct = default)
     {
         var infoRecord = await GetFirstAsync<MinecraftInfoRecord>("GetMinecraftInfo", new { GuildId = (long)guild.Id });
         
@@ -40,7 +52,7 @@ public class MinecraftRepository(
         };
     }
 
-    public async Task SaveInfoAsync(MinecraftInfo info)
+    public async Task SaveInfoAsync(MinecraftInfo info, CancellationToken ct = default)
     {
         var record = new MinecraftInfoRecord
         {
@@ -56,19 +68,19 @@ public class MinecraftRepository(
         await ExecuteAsync("SaveMinecraftInfo", record);
     }
 
-    public async Task<bool> IsServerOnline(MinecraftInfo info)
+    public async Task<bool> IsServerOnline(MinecraftInfo info, CancellationToken ct = default)
     {
         return await docker.IsContainerOnline(info.ContainerName);
     }
 
-    public async Task<bool> StartServerAsync(MinecraftInfo info)
+    public async Task<bool> StartServerAsync(MinecraftInfo info, CancellationToken ct = default)
     {
         if (await docker.IsContainerOnline(info.ContainerName)) return false;
         
         return await docker.TryStartContainerAsync(info.ContainerName);
     }
 
-    public async Task<bool> StopServerAsync(MinecraftInfo info)
+    public async Task<bool> StopServerAsync(MinecraftInfo info, CancellationToken ct = default)
     {
         if (!await docker.IsContainerOnline(info.ContainerName)) return false;
         
@@ -84,7 +96,7 @@ public class MinecraftRepository(
         return true;
     }
 
-    public async Task<string> GetPlayerListAsync(MinecraftInfo info)
+    public async Task<string> GetPlayerListAsync(MinecraftInfo info, CancellationToken ct = default)
     {
         var output = await ExecuteMinecraftCommand(info, "list");
         int separatorIndex = output.IndexOf(':');
@@ -98,7 +110,7 @@ public class MinecraftRepository(
                     .Select(name => $"* `{name}`"));
     }
 
-    public async Task<string> ExecuteCommandAsync(MinecraftInfo info, string command)
+    public async Task<string> ExecuteCommandAsync(MinecraftInfo info, string command, CancellationToken ct = default)
     {
         return await ExecuteMinecraftCommand(info, command);
     }

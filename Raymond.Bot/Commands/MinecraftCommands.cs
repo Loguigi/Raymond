@@ -1,17 +1,17 @@
-using Artifice.Discord;
 using DSharpPlus;
 using DSharpPlus.Commands;
 using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
+using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
 
 namespace Raymond.Bot.Commands;
 
 [Command("mc"), RequireGuild]
 public class MinecraftCommands(
-    MinecraftRepository mcRepo,
+    IMinecraftRepository mcRepo,
     DiscordClient client,
     ILogger<MinecraftCommands> logger)
     : BaseCommand(client, logger) 

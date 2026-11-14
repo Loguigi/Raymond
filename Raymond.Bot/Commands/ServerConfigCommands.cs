@@ -7,8 +7,8 @@ using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Commands.Processors.SlashCommands.ArgumentModifiers;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
+using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
-using Artifice.Discord;
 
 namespace Raymond.Bot.Commands;
 
@@ -16,7 +16,7 @@ namespace Raymond.Bot.Commands;
 public class ServerConfigCommands(
     DiscordClient client,
     ILogger<ServerConfigCommands> logger,
-    ServerConfigRepository configRepo)
+    IServerConfigRepository configRepo)
     : BaseCommand(client, logger)
 {
     public enum ToggleType

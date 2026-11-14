@@ -2,17 +2,29 @@ using Dapper;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
 using Raymond.Data.Models;
-using Artifice.Data;
+using Raymond.Data.Sql;
+using Raymond.Shared.Entities;
 
 namespace Raymond.Data.Repositories;
 
-public class WheelPickerRepository(
-    ILogger<WheelPickerRepository> logger, 
-    IDbConnectionFactory factory) 
-    : BaseRepository(logger, factory)
+public interface IWheelPickerRepository
 {
-    public const int MaxWheels = 25;
-    public const int MaxFileSizeBytes = 50_000;
+    int MaxWheels { get; }
+    int MaxFileSizeBytes { get; }
+    Task<List<WheelPicker>> GetAllAsync(DiscordGuild guild, CancellationToken ct = default);
+    Task SaveWheelAsync(WheelPicker wheelPicker, CancellationToken ct = default);
+    Task SaveWheelOptionAsync(WheelPicker wheelPicker, WheelOption option, CancellationToken ct = default);
+    Task RestoreWheelOptionsAsync(WheelPicker wheelPicker, CancellationToken ct = default);
+    Task DeleteWheelPicker(WheelPicker wheelPicker, CancellationToken ct = default);
+}
+
+public class SqlWheelPickerRepository(
+    ILogger<SqlWheelPickerRepository> logger, 
+    IDbConnectionFactory factory) 
+    : BaseSqlRepository(logger, factory), IWheelPickerRepository
+{
+    public int MaxWheels => 25;
+    public int MaxFileSizeBytes => 50_000;
     
     private sealed class WheelPickerRecord
     {
@@ -24,7 +36,7 @@ public class WheelPickerRepository(
         public bool? TempRemoved { get; set; }
     }
     
-    public async Task<List<WheelPicker>> GetAllAsync(DiscordGuild guild)
+    public async Task<List<WheelPicker>> GetAllAsync(DiscordGuild guild, CancellationToken ct = default)
     {
         var wheels = new List<WheelPicker>();
         
@@ -59,7 +71,7 @@ public class WheelPickerRepository(
         return wheels;
     }
 
-    public async Task SaveWheelAsync(WheelPicker wheelPicker)
+    public async Task SaveWheelAsync(WheelPicker wheelPicker, CancellationToken ct = default)
     {
         var param = new
         {
@@ -72,7 +84,7 @@ public class WheelPickerRepository(
         await ExecuteAsync("SaveWheelPicker", param);
     }
 
-    public async Task SaveWheelOptionAsync(WheelPicker wheelPicker, WheelOption option)
+    public async Task SaveWheelOptionAsync(WheelPicker wheelPicker, WheelOption option, CancellationToken ct = default)
     {
         var param = new
         {
@@ -84,12 +96,12 @@ public class WheelPickerRepository(
         await ExecuteAsync("SaveWheelOption", param);
     }
 
-    public async Task RestoreWheelOptionsAsync(WheelPicker wheelPicker)
+    public async Task RestoreWheelOptionsAsync(WheelPicker wheelPicker, CancellationToken ct = default)
     {
         await ExecuteAsync("RestoreWheelOptions", new { wheelPicker.Id });
     }
 
-    public async Task DeleteWheelPicker(WheelPicker wheelPicker)
+    public async Task DeleteWheelPicker(WheelPicker wheelPicker, CancellationToken ct = default)
     {
         await ExecuteAsync("DeleteWheelPicker", new { wheelPicker.Id });
     }

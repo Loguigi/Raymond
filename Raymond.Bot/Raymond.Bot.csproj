@@ -10,12 +10,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Raymond.Data\Raymond.Data.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Content Include="..\.dockerignore">
-        <Link>.dockerignore</Link>
-      </Content>
+      <ProjectReference Include="..\Raymond.Shared\Raymond.Shared.csproj" />
     </ItemGroup>
 
 </Project>

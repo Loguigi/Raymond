@@ -5,16 +5,16 @@ using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
+using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
 using Raymond.Bot.Utilities;
-using Artifice.Discord;
 
 namespace Raymond.Bot.Commands;
 
 [Command("birthday")]
 public class BirthdayCommands(
     DiscordClient client,
-    ServerMemberRepository memberRepo,
+    IServerMemberRepository memberRepo,
     ILogger<BirthdayCommands> logger)
     : BaseCommand(client, logger)
 {

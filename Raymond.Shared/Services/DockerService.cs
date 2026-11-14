@@ -2,7 +2,7 @@ using Docker.DotNet;
 using Docker.DotNet.Models;
 using Microsoft.Extensions.Logging;
 
-namespace Raymond.Data.Services;
+namespace Raymond.Shared.Services;
 
 public class DockerService
 {

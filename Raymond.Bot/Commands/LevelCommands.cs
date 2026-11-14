@@ -5,17 +5,17 @@ using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
+using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
 using Raymond.Bot.Utilities;
-using Raymond.Data.Models;
-using Artifice.Discord;
+using Raymond.Shared.Entities;
 
 namespace Raymond.Bot.Commands;
 
 public class LevelCommands(
     DiscordClient client,
     ILogger<BaseCommand> logger,
-    ServerMemberRepository memberRepo)
+    IServerMemberRepository memberRepo)
     : BaseCommand(client, logger)
 {
     [Command("level"), RequireGuild, Description("Displays your level card or another user's level card")]

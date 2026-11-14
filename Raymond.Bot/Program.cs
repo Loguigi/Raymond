@@ -1,30 +1,26 @@
 ﻿using DSharpPlus;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Raymond.Data.Repositories;
-using Artifice.Bot;
-using Artifice.Scheduling;
-using Raymond.Data.Services;
+using Raymond.Bot.Discord;
+using Raymond.Data;
+using Raymond.Shared.Extensions;
+using Raymond.Shared.Services;
 
 var builder = Host.CreateApplicationBuilder();
 
-builder.AddDiscordBot(
-    Environment.GetEnvironmentVariable("RaymondToken") ?? throw new Exception("Token not set"),
+builder.AddServiceDefaults();
+
+builder.Services.AddDiscordBot(
+    builder.Configuration["RaymondToken"] ?? throw new Exception("Bot token not configured"),
     DiscordIntents.All,
     typeof(Program).Assembly,
     "`",
-    typeof(Program).Assembly,
-    Environment.GetEnvironmentVariable("RaymondConnectionString") ?? throw new Exception("Connection string not set"));
-
-builder.Services.AddScheduledTasksFromAssembly(typeof(Program).Assembly);
+    typeof(Program).Assembly);
+builder.Services.AddHostedService<BotHostedService>();
+builder.Services.AddBotLogging();
 
 builder.Services.AddScoped<DockerService>();
-
-builder.Services.AddScoped<ServerMemberRepository>();
-builder.Services.AddScoped<ServerConfigRepository>();
-builder.Services.AddScoped<WheelPickerRepository>();
-builder.Services.AddScoped<MinecraftRepository>();
-
+builder.Services.AddDataRepositories();
 builder.Services.AddSingleton<Random>();
 
 var host = builder.Build();

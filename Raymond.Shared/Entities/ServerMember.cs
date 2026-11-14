@@ -1,6 +1,6 @@
 using DSharpPlus.Entities;
 
-namespace Raymond.Data.Models;
+namespace Raymond.Shared.Entities;
 
 public class ServerMember(DiscordUser user, DiscordGuild guild)
 {

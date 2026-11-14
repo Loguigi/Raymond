@@ -9,19 +9,20 @@ using DSharpPlus.Commands.Processors.SlashCommands.ArgumentModifiers;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Raymond.Bot.Discord;
 using Raymond.Bot.Utilities;
-using Raymond.Data.Models;
 using Raymond.Data.Repositories;
-using Artifice.Discord;
+using Raymond.Shared.Entities;
 
 namespace Raymond.Bot.Commands;
 
 [Command("wheel"), Description("Manage and spin custom wheel pickers"), RequireGuild]
 public class WheelPickerCommands(
     DiscordClient client,
+    HttpClient http,
     ILogger<WheelPickerCommands> logger,
-    WheelPickerRepository wheelRepo,
-    ServerMemberRepository memberRepo,
+    IWheelPickerRepository wheelRepo,
+    IServerMemberRepository memberRepo,
     Random random)
     : BaseCommand(client, logger)
 {
@@ -34,9 +35,9 @@ public class WheelPickerCommands(
         {
             var currentWheels = await wheelRepo.GetAllAsync(ctx.Guild!);
             
-            if (currentWheels.Count == WheelPickerRepository.MaxWheels)
+            if (currentWheels.Count == wheelRepo.MaxWheels)
             {
-                await Send(ctx, Embeds.Error($"Maximum number of wheels reached in the server ({WheelPickerRepository.MaxWheels}). Please delete one to add another"), true);
+                await Send(ctx, Embeds.Error($"Maximum number of wheels reached in the server ({wheelRepo.MaxWheels}). Please delete one to add another"), true);
                 return;
             }
             
@@ -83,7 +84,7 @@ public class WheelPickerCommands(
                     return;
                 }
 
-                if (file.FileSize > WheelPickerRepository.MaxFileSizeBytes)
+                if (file.FileSize > wheelRepo.MaxFileSizeBytes)
                 {
                     await Send(ctx, Embeds.Error("Please upload a file less than 50kb"), true);
                     return;
@@ -92,8 +93,7 @@ public class WheelPickerCommands(
                 try
                 {
                     // Download the file content
-                    using var httpClient = new HttpClient();
-                    var fileContent = await httpClient.GetStringAsync(file.Url);
+                    var fileContent = await http.GetStringAsync(file.Url);
         
                     // Parse lines and filter out empty ones
                     var options = fileContent
@@ -296,7 +296,7 @@ public class WheelAutoCompleteProvider : IAutoCompleteProvider
 {
     public async ValueTask<IEnumerable<DiscordAutoCompleteChoice>> AutoCompleteAsync(AutoCompleteContext context)
     {
-        var wheelManager = context.ServiceProvider.GetRequiredService<WheelPickerRepository>();
+        var wheelManager = context.ServiceProvider.GetRequiredService<SqlWheelPickerRepository>();
         var wheels = await wheelManager.GetAllAsync(context.Guild!);
 
         var input = context.UserInput?.ToLower() ?? string.Empty;

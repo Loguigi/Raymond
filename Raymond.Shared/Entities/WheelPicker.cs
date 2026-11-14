@@ -1,6 +1,6 @@
 using DSharpPlus.Entities;
 
-namespace Raymond.Data.Models;
+namespace Raymond.Shared.Entities;
 
 public record WheelOption(string Option, bool TempRemoved);
 
@@ -12,7 +12,7 @@ public class WheelPicker(DiscordGuild guild)
     public string? ImageUrl { get; set; }
     public List<WheelOption> Options { get; set; } = [];
     
-    public List<WheelOption> AvailableOptions => Options.Where(x => !x.TempRemoved).ToList();
-    public List<WheelOption> TempRemovedOptions => Options.Where(x => x.TempRemoved).ToList();
+    public List<WheelOption> AvailableOptions => [.. Options.Where(x => !x.TempRemoved)];
+    public List<WheelOption> TempRemovedOptions => [.. Options.Where(x => x.TempRemoved)];
     public long GuildId => (long)Guild.Id;
 }

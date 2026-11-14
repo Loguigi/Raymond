@@ -6,16 +6,16 @@ using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
+using Raymond.Bot.Discord;
 using Raymond.Bot.Utilities;
 using Raymond.Data.Models;
 using Raymond.Data.Repositories;
-using Artifice.Discord;
 
 namespace Raymond.Bot.Commands;
 
 public class MiscCommands(
     DiscordClient client,
-    ServerMemberRepository memberRepo,
+    IServerMemberRepository memberRepo,
     Random random,
     ILogger<MiscCommands> logger)
     : BaseCommand(client, logger)

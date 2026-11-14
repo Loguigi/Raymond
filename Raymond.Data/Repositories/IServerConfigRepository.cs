@@ -1,14 +1,21 @@
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
 using Raymond.Data.Models;
-using Artifice.Data;
+using Raymond.Data.Sql;
+using Raymond.Shared.Entities;
 
 namespace Raymond.Data.Repositories;
 
-public class ServerConfigRepository(
-    ILogger<ServerConfigRepository> logger, 
+public interface IServerConfigRepository
+{
+    Task<ServerConfig> GetConfigAsync(DiscordGuild guild, CancellationToken ct = default);
+    Task SaveConfigAsync(ServerConfig config, CancellationToken ct = default);
+}
+
+public class SqlServerConfigRepository(
+    ILogger<SqlServerConfigRepository> logger, 
     IDbConnectionFactory factory) 
-    : BaseRepository(logger, factory)
+    : BaseSqlRepository(logger, factory), IServerConfigRepository
 {
     private sealed class ServerConfigRecord
     {
@@ -24,7 +31,7 @@ public class ServerConfigRepository(
         public long? LoggingChannelId { get; set; }
     }
 
-    public async Task<ServerConfig> GetConfigAsync(DiscordGuild guild)
+    public async Task<ServerConfig> GetConfigAsync(DiscordGuild guild, CancellationToken ct = default)
     {
         var config = new ServerConfig(guild, guild.GetDefaultChannel()!);
         
@@ -32,7 +39,7 @@ public class ServerConfigRepository(
         
         if (configRecord is null)
         {
-            await SaveConfigAsync(config);
+            await SaveConfigAsync(config, ct).ConfigureAwait(false);
             configRecord = await GetFirstAsync<ServerConfigRecord>("GetServerConfig", new {GuildId = (long)guild.Id});
         }
         
@@ -50,7 +57,7 @@ public class ServerConfigRepository(
         return config;
     }
 
-    public async Task SaveConfigAsync(ServerConfig config)
+    public async Task SaveConfigAsync(ServerConfig config,  CancellationToken ct = default)
     {
         var record = new ServerConfigRecord
         {

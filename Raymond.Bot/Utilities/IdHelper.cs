@@ -1,9 +1,8 @@
 using Raymond.Data.Models;
-using Artifice.Utilities;
 
 namespace Raymond.Bot.Utilities;
 
-public class IdPrefixes
+public static class IdPrefixes
 {
     public const string Leaderboard = "leaderboard";
     public const string BirthdayList = "birthdaylist";

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build">
+    <Sdk Name="Microsoft.Build.Sql" Version="2.2.0"/>
+    <PropertyGroup>
+        <Name>Raymond.Database</Name>
+        <DSP>Microsoft.Data.Tools.Schema.Sql.Sql170DatabaseSchemaProvider</DSP>
+        <ModelCollation>1033, CI</ModelCollation>
+        <ProjectGuid>D5063B78-A1C3-4FC0-A417-9F75D2ED6726</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+      <None Include="StoredProcedures\DeleteWheelPicker.sql" />
+      <None Include="StoredProcedures\GetMember.sql" />
+      <None Include="StoredProcedures\GetMinecraftInfo.sql" />
+      <None Include="StoredProcedures\GetServerConfig.sql" />
+      <None Include="StoredProcedures\GetServerMembers.sql" />
+      <None Include="StoredProcedures\GetWheelPickers.sql" />
+      <None Include="StoredProcedures\RestoreWheelOptions.sql" />
+      <None Include="StoredProcedures\SaveMinecraftInfo.sql" />
+      <None Include="StoredProcedures\SaveServerConfig.sql" />
+      <None Include="StoredProcedures\SaveServerMember.sql" />
+      <None Include="StoredProcedures\SaveWheelOption.sql" />
+      <None Include="StoredProcedures\SaveWheelPicker.sql" />
+      <None Include="Tables\MinecraftInfo.sql" />
+      <None Include="Tables\ServerConfigs.sql" />
+      <None Include="Tables\ServerMembers.sql" />
+      <None Include="Tables\WheelOptions.sql" />
+      <None Include="Tables\WheelPickers.sql" />
+    </ItemGroup>
+</Project>
