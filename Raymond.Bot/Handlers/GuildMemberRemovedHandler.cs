@@ -1,6 +1,7 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
@@ -10,8 +11,8 @@ namespace Raymond.Bot.Handlers;
 public class GuildMemberRemovedHandler(
     DiscordClient client,
     ILogger<GuildMemberRemovedHandler> logger,
-    SqlServerMemberRepository memberRepo,
-    SqlServerConfigRepository configRepo)
+    IServerMemberRepository memberRepo,
+    IServerConfigRepository configRepo)
     : BaseHandler(client, logger), IEventHandler<GuildMemberRemovedEventArgs>
 {
     public async Task HandleEventAsync(DiscordClient s, GuildMemberRemovedEventArgs e)

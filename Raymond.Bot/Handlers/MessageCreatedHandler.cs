@@ -10,8 +10,8 @@ namespace Raymond.Bot.Handlers;
 public class MessageCreatedHandler(
     DiscordClient client,
     ILogger<MessageCreatedHandler> logger,
-    SqlServerMemberRepository memberRepo,
-    SqlServerConfigRepository configRepo)
+    IServerMemberRepository memberRepo,
+    IServerConfigRepository configRepo)
     : BaseHandler(client, logger), IEventHandler<MessageCreatedEventArgs>
 {
     public async Task HandleEventAsync(DiscordClient s, MessageCreatedEventArgs e)

@@ -10,8 +10,8 @@ namespace Raymond.Bot.Handlers;
 
 public class ComponentInteractionHandler(
     DiscordClient client,
-    SqlServerMemberRepository memberRepo,
-    SqlWheelPickerRepository wheelRepo,
+    IServerMemberRepository memberRepo,
+    IWheelPickerRepository wheelRepo,
     Random random,
     ILogger<ComponentInteractionHandler> logger)
     : BaseHandler(client, logger), IEventHandler<ComponentInteractionCreatedEventArgs>

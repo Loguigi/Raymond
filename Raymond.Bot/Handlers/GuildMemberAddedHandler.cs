@@ -10,8 +10,8 @@ namespace Raymond.Bot.Handlers;
 public class GuildMemberAddedHandler(
     DiscordClient client,
     ILogger<GuildMemberAddedHandler> logger,
-    SqlServerMemberRepository memberRepo,
-    SqlServerConfigRepository configRepo)
+    IServerMemberRepository memberRepo,
+    IServerConfigRepository configRepo)
     : BaseHandler(client, logger), IEventHandler<GuildMemberAddedEventArgs>
 {
     public async Task HandleEventAsync(DiscordClient s, GuildMemberAddedEventArgs e)
