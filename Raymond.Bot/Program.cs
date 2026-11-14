@@ -10,6 +10,8 @@ var builder = Host.CreateApplicationBuilder();
 
 builder.AddServiceDefaults();
 
+builder.Services.AddHttpClient<HttpClient>();
+
 builder.Services.AddDiscordBot(
     builder.Configuration["RaymondToken"] ?? throw new Exception("Bot token not configured"),
     DiscordIntents.All,

@@ -15,9 +15,12 @@ public static class Extensions
         var bot = builder.AddProject<Projects.Raymond_Bot>("raymond-bot");
 
         var token = builder.AddParameter("raymond-token", true);
+        var adminId = builder.AddParameter("discord-admin-id", true);
 
         return bot
             .WithReference(sql)
-            .WithEnvironment("RaymondToken", token);
+            .WithEnvironment("RaymondToken", token)
+            .WithEnvironment("AdminId", adminId)
+            .PublishAsDockerComposeService(UnlessStopped);
     }
 }

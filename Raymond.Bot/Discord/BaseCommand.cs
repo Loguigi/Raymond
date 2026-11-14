@@ -1,11 +1,12 @@
 using DSharpPlus;
 using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Entities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Raymond.Bot.Discord;
 
-public abstract class BaseCommand(DiscordClient client, ILogger<BaseCommand> logger) : BaseMessageSender(client)
+public abstract class BaseCommand(DiscordClient client, IConfiguration config, ILogger<BaseCommand> logger) : BaseMessageSender(client, config)
 {
     protected async Task ExecuteAsync(SlashCommandContext ctx, Func<Task> action, string commandName)
     {

@@ -1,6 +1,7 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
@@ -11,8 +12,9 @@ public class GuildMemberAddedHandler(
     DiscordClient client,
     ILogger<GuildMemberAddedHandler> logger,
     IServerMemberRepository memberRepo,
-    IServerConfigRepository configRepo)
-    : BaseHandler(client, logger), IEventHandler<GuildMemberAddedEventArgs>
+    IServerConfigRepository configRepo,
+    IConfigurationRoot config)
+    : BaseHandler(client, config, logger), IEventHandler<GuildMemberAddedEventArgs>
 {
     public async Task HandleEventAsync(DiscordClient s, GuildMemberAddedEventArgs e)
     {

@@ -1,11 +1,12 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Raymond.Bot.Discord;
 
-public abstract class BaseHandler(DiscordClient client, ILogger<BaseHandler> logger) : BaseMessageSender(client)
+public abstract class BaseHandler(DiscordClient client, IConfiguration config, ILogger<BaseHandler> logger) : BaseMessageSender(client, config)
 {
     protected async Task ExecuteAsync(ComponentInteractionCreatedEventArgs ctx, Func<Task> action, string handler, string id)
     {

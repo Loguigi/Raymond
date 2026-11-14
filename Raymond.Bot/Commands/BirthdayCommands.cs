@@ -4,6 +4,7 @@ using DSharpPlus.Commands;
 using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Entities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
@@ -15,8 +16,9 @@ namespace Raymond.Bot.Commands;
 public class BirthdayCommands(
     DiscordClient client,
     IServerMemberRepository memberRepo,
-    ILogger<BirthdayCommands> logger)
-    : BaseCommand(client, logger)
+    ILogger<BirthdayCommands> logger,
+    IConfiguration config)
+    : BaseCommand(client, config, logger)
 {
     [Command("check"), Description("Check a member's birthday"), RequireGuild]
     public async Task CheckBirthday(SlashCommandContext ctx, DiscordUser user)

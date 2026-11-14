@@ -1,5 +1,6 @@
 using DSharpPlus;
 using DSharpPlus.EventArgs;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Utilities;
 using Raymond.Data.Models;
@@ -10,11 +11,12 @@ namespace Raymond.Bot.Handlers;
 
 public class ComponentInteractionHandler(
     DiscordClient client,
+    Random random,
     IServerMemberRepository memberRepo,
     IWheelPickerRepository wheelRepo,
-    Random random,
+    IConfiguration config,
     ILogger<ComponentInteractionHandler> logger)
-    : BaseHandler(client, logger), IEventHandler<ComponentInteractionCreatedEventArgs>
+    : BaseHandler(client, config, logger), IEventHandler<ComponentInteractionCreatedEventArgs>
 {
     public async Task HandleEventAsync(DiscordClient s, ComponentInteractionCreatedEventArgs e)
     {

@@ -5,6 +5,7 @@ using DSharpPlus.Commands;
 using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Entities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
 using Raymond.Bot.Utilities;
@@ -17,8 +18,9 @@ public class MiscCommands(
     DiscordClient client,
     IServerMemberRepository memberRepo,
     Random random,
-    ILogger<MiscCommands> logger)
-    : BaseCommand(client, logger)
+    ILogger<MiscCommands> logger,
+    IConfiguration config)
+    : BaseCommand(client, config, logger)
 {
     [Command("who"), Description("Displays a list of all members' names in the server"), RequireGuild]
     public async Task Who(SlashCommandContext ctx)

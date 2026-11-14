@@ -2,14 +2,15 @@ using DSharpPlus;
 using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
+using Microsoft.Extensions.Configuration;
 
 namespace Raymond.Bot.Discord;
 
-public abstract class BaseMessageSender(DiscordClient client)
+public abstract class BaseMessageSender(DiscordClient client, IConfiguration config)
 {
     protected async Task SendErrorReport(Exception ex, DiscordUser? userExecuted, DiscordGuild? guildExecuted, string? id = null)
     {
-        var adminId = ulong.Parse(Environment.GetEnvironmentVariable("AdminId") ?? throw new Exception("AdminId not set"));
+        var adminId = ulong.Parse(config["AdminId"] ?? throw new Exception("AdminId not set"));
         var adminUser = await client.GetUserAsync(adminId);
         
         await SendDm(adminUser, Embeds.ErrorDetails(ex, userExecuted, guildExecuted, id));

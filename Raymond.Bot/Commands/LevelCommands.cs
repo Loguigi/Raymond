@@ -4,6 +4,7 @@ using DSharpPlus.Commands;
 using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Entities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
@@ -15,8 +16,9 @@ namespace Raymond.Bot.Commands;
 public class LevelCommands(
     DiscordClient client,
     ILogger<BaseCommand> logger,
-    IServerMemberRepository memberRepo)
-    : BaseCommand(client, logger)
+    IServerMemberRepository memberRepo,
+    IConfiguration config)
+    : BaseCommand(client, config, logger)
 {
     [Command("level"), RequireGuild, Description("Displays your level card or another user's level card")]
     public async Task Level(SlashCommandContext ctx, DiscordUser? user = null)

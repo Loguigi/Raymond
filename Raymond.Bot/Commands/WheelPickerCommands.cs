@@ -7,6 +7,7 @@ using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Commands.Processors.SlashCommands.ArgumentModifiers;
 using DSharpPlus.Entities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
@@ -23,8 +24,9 @@ public class WheelPickerCommands(
     ILogger<WheelPickerCommands> logger,
     IWheelPickerRepository wheelRepo,
     IServerMemberRepository memberRepo,
-    Random random)
-    : BaseCommand(client, logger)
+    Random random,
+    IConfiguration config)
+    : BaseCommand(client, config, logger)
 {
     [Command("create"), Description("Create a new wheel picker"), RequireGuild]
     public async Task CreateWheel(SlashCommandContext ctx,
