@@ -36,9 +36,9 @@ public abstract class BaseHandler(DiscordClient client, IConfiguration config, I
         await ExecuteHandler(ctx.Author, ctx.Guild, action, handler);
     }
     
-    protected async Task ExecuteAsync(ScheduledGuildEventCreatedEventArgs ctx, Func<Task> action, string handler, string id)
+    protected async Task ExecuteAsync(ScheduledGuildEventCreatedEventArgs ctx, Func<Task> action, string handler)
     {
-        await ExecuteHandlerWithId(ctx.Creator, ctx.Guild, action, handler, id);
+        await ExecuteHandler(ctx.Creator, ctx.Guild, action, handler);
     }
 
     protected async Task ExecuteAsync(GuildMemberAddedEventArgs ctx, Func<Task> action, string handler)
@@ -68,7 +68,7 @@ public abstract class BaseHandler(DiscordClient client, IConfiguration config, I
         }
     }
 
-    private async Task ExecuteHandlerWithId(DiscordUser user, DiscordGuild guild, Func<Task> action, string handler,
+    private async Task ExecuteHandler(DiscordUser user, DiscordGuild guild, Func<Task> action, string handler,
         string id)
     {
         try

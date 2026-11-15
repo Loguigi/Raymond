@@ -64,7 +64,7 @@ public static class ServiceCollectionExtensions
 #if DEBUG
                 logging.SetMinimumLevel(LogLevel.Debug);
 #else
-                logging.SetMinimumLevel(LogLevel.Warning);
+                logging.SetMinimumLevel(LogLevel.Information);
 #endif
             
                 logging.AddConsole();

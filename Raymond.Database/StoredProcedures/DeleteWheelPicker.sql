@@ -1,4 +1,4 @@
-create proc [DeleteWheelPicker]
+create or alter proc [DeleteWheelPicker]
 
 @Id int
 

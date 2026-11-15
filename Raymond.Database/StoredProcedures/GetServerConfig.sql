@@ -1,4 +1,4 @@
-create proc [GetServerConfig]
+create or alter proc [GetServerConfig]
 
 @GuildId bigint
 

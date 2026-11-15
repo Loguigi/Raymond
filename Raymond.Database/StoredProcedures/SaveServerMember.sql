@@ -1,4 +1,4 @@
-create proc [SaveServerMember]
+create or alter proc [SaveServerMember]
 
 @Id int,
 @GuildId bigint,
