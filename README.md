@@ -39,9 +39,9 @@ The AppHost expects an externally available SQL Server connection named `raymond
 Store credentials in the AppHost project's .NET User Secrets rather than committing them to configuration files. From the repository root, set the AppHost parameters and connection string:
 
 ```bash
-dotnet user-secrets set --project Raymond.AppHost/Raymond.AppHost.csproj "Parameters:raymond-token" "<DISCORD_BOT_TOKEN>"
-dotnet user-secrets set --project Raymond.AppHost/Raymond.AppHost.csproj "Parameters:discord-admin-id" "<DISCORD_USER_ID>"
-dotnet user-secrets set --project Raymond.AppHost/Raymond.AppHost.csproj "ConnectionStrings:raymond-sql" "Server=localhost;Database=Raymond.Database;User Id=<SQL_USER>;Password=<SQL_PASSWORD>;TrustServerCertificate=True"
+dotnet user-secrets set --project Raymond.AppHost/Raymond.AppHost.csproj "Parameters:RaymondToken" "<DISCORD_BOT_TOKEN>"
+dotnet user-secrets set --project Raymond.AppHost/Raymond.AppHost.csproj "Parameters:DiscordAdminId" "<DISCORD_USER_ID>"
+dotnet user-secrets set --project Raymond.AppHost/Raymond.AppHost.csproj "ConnectionStrings:RaymondSql" "Server=localhost;Database=Raymond.Database;User Id=<SQL_USER>;Password=<SQL_PASSWORD>;TrustServerCertificate=True"
 ```
 
 ## Run locally
@@ -66,8 +66,8 @@ The AppHost defaults are defined in `Raymond.AppHost/appsettings.json`:
 
 | Parameter | Default | Purpose |
 | --- | --- | --- |
-| `scheduling-timezone` | `America/New_York` | Time zone used to interpret the scheduler's cron expressions. |
-| `scheduling-birthdays` | `0 * * * *` | Check birthday notifications at the start of each hour. |
-| `scheduling-guild-events` | `30 * * * *` | Check guild events at half past each hour. |
+| `SchedulingTimeZone` | `America/New_York` | Time zone used to interpret the scheduler's cron expressions. |
+| `SchedulingBirthdays` | `0 * * * *` | Check birthday notifications at the start of each hour. |
+| `SchedulingGuildEvents` | `30 * * * *` | Check guild events at half past each hour. |
 
 Each Discord server also has its own configured time zone and birthday notification hour. Birthday reminders are sent on the birthday and one, seven, and fourteen days beforehand; guild-event reminders are sent one, seven, and fourteen days before an event. To customize the scheduler defaults locally, override the matching `Parameters:scheduling-timezone`, `Parameters:scheduling-birthdays`, or `Parameters:scheduling-guild-events` keys in AppHost configuration or User Secrets.

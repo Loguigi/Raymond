@@ -2,7 +2,7 @@ using Raymond.AppHost;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var sql = builder.AddConnectionString("raymond-sql");
+var sql = builder.AddConnectionString("RaymondSql");
 
 builder.AddDockerComposeEnvironment("raymond")
     .ConfigureComposeFile(f => f.Name = "raymond")

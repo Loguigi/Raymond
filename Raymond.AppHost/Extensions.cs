@@ -14,12 +14,12 @@ public static class Extensions
     {
         var bot = builder.AddProject<Projects.Raymond_Bot>("raymond-bot");
 
-        var token = builder.AddParameter("raymond-token", true);
-        var adminId = builder.AddParameter("discord-admin-id", true);
+        var token = builder.AddParameter("RaymondToken", true);
+        var adminId = builder.AddParameter("DiscordAdminId", true);
 
-        var timezone = builder.AddParameter("scheduling-timezone");
-        var birthdaysCron = builder.AddParameter("scheduling-birthdays");
-        var guildEventsCron = builder.AddParameter("scheduling-guild-events");
+        var timezone = builder.AddParameter("SchedulingTimezone");
+        var birthdaysCron = builder.AddParameter("SchedulingBirthdays");
+        var guildEventsCron = builder.AddParameter("SchedulingGuildEvents");
 
         return bot
             .WithReference(sql)
