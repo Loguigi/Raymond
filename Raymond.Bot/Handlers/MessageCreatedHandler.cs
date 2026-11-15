@@ -13,7 +13,7 @@ public class MessageCreatedHandler(
     ILogger<MessageCreatedHandler> logger,
     IServerMemberRepository memberRepo,
     IServerConfigRepository configRepo,
-    IConfigurationRoot config)
+    IConfiguration config)
     : BaseHandler(client, config, logger), IEventHandler<MessageCreatedEventArgs>
 {
     public async Task HandleEventAsync(DiscordClient s, MessageCreatedEventArgs e)
