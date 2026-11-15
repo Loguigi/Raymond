@@ -2,6 +2,7 @@ using DSharpPlus.Entities;
 using Raymond.Data.Models;
 using Raymond.Bot.Discord;
 using Raymond.Shared.Entities;
+using Raymond.Shared.Utilities;
 
 namespace Raymond.Bot.Utilities;
 
@@ -37,10 +38,10 @@ public static class CustomMessages
         };
     }
 
-    public static M BirthdayList(DiscordGuild guild, List<ServerMember> members, BirthdayListId id)
+    public static M BirthdayList(DiscordGuild guild, List<ServerMember> members, DateOnly localDate, BirthdayListId id)
     {
         var paginator = new Paginator<ServerMember>(
-            members.Where(m => m.Birthday.HasValue).OrderBy(m => m.NextBirthday), 10, id.PageToken);
+            members.Where(m => m.Birthday.HasValue).OrderBy(m => m.GetNextBirthday(localDate)), 10, id.PageToken);
         
         return new M
         {
@@ -51,11 +52,14 @@ public static class CustomMessages
                 Title = "Birthdays",
                 Desc = paginator.RenderPage((member, _) =>
                 {
-                    var turningAge = member.NextBirthday?.Date == DateTime.Today
-                        ? member.Age
-                        : member.Age + 1;
+                    var nextBirthday = member.GetNextBirthday(localDate);
+                    var age = member.GetAge(localDate);
                     
-                    return $"* {member.DisplayMention}: {member.FormattedNextBirthday} `({turningAge})`";
+                    var turningAge = nextBirthday == localDate
+                        ? age
+                        : age + 1;
+                    
+                    return $"* {member.DisplayMention}: {member.GetFormattedBirthday(nextBirthday)} `({age} => {turningAge})`";
                 }),
                 Color = DiscordColor.HotPink,
                 Footer = paginator.PageStatus

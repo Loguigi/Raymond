@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Raymond.Bot.Utilities;
 using Raymond.Data.Models;
 using Raymond.Data.Repositories;
+using Raymond.Shared.Utilities;
 using BaseHandler = Raymond.Bot.Discord.BaseHandler;
 
 namespace Raymond.Bot.Handlers;
@@ -13,6 +14,7 @@ public class ComponentInteractionHandler(
     DiscordClient client,
     Random random,
     IServerMemberRepository memberRepo,
+    IServerConfigRepository configRepo,
     IWheelPickerRepository wheelRepo,
     IConfiguration config,
     ILogger<ComponentInteractionHandler> logger)
@@ -58,8 +60,9 @@ public class ComponentInteractionHandler(
         {
             if (!BirthdayListId.TryParse(e.Id, out var id) || id is null) return;
             var members = await memberRepo.GetMembersAsync(e.Guild);
+            var serverConfig = await configRepo.GetConfigAsync(e.Guild);
 
-            await Update(e, CustomMessages.BirthdayList(e.Guild, members, id));
+            await Update(e, CustomMessages.BirthdayList(e.Guild, members, TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone), id));
         },  "birthday_list", e.Id);
     }
 

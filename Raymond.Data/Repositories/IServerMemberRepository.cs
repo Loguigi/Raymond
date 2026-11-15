@@ -14,7 +14,7 @@ public interface IServerMemberRepository
     Task<List<ServerMember>> GetMembersAsync(DiscordGuild guild, CancellationToken ct = default);
     Task SaveMemberAsync(ServerMember member, CancellationToken ct = default);
     Task<bool> GrantExp(ServerMember member, CancellationToken ct = default);
-    ServerMember? GetNextBirthday(List<ServerMember> members);
+    ServerMember? GetNextBirthday(List<ServerMember> members, DateOnly todayLocal);
 
 }
 
@@ -34,7 +34,7 @@ public sealed class SqlServerMemberRepository(
         public string? Name { get; set; }
         public int Level { get; set; }
         public int Experience { get; set; }
-        public DateTime? Birthday { get; set; }
+        public DateOnly? Birthday { get; set; }
         public bool Active { get; set; }
     }
 
@@ -164,13 +164,12 @@ public sealed class SqlServerMemberRepository(
         return leveledUp;
     }
     
-    public ServerMember? GetNextBirthday(List<ServerMember> members)
+    public ServerMember? GetNextBirthday(List<ServerMember> members, DateOnly todayLocal)
     {
         if (!members.Any(m => m.Birthday.HasValue)) return null;
         
-        members = [.. members.Where(x => x.NextBirthday.HasValue).OrderBy(x => x.NextBirthday)];
+        members = [.. members.Where(x => x.GetNextBirthday(todayLocal).HasValue).OrderBy(x => x.GetNextBirthday(todayLocal))];
         var nextBirthday = members.First();
-        logger.LogDebug("Next birthday is {User} on {Date}", nextBirthday.UserId, nextBirthday.NextBirthday);
         
         return nextBirthday;
     }

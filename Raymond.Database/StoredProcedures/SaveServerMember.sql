@@ -6,7 +6,7 @@ create proc [SaveServerMember]
 @Name nvarchar(50),
 @Level int,
 @Experience int,
-@Birthday datetime,
+@Birthday date,
 @Active bit
 
 as

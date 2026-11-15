@@ -10,6 +10,7 @@ create table ServerConfigs
     BirthdayMessage       nvarchar(200) default 'Happy Birthday!' not null,
     EnableLevels          bit           default 0                 not null,
     LevelUpMessage        nvarchar(200) default 'has leveled up!' not null,
-    LoggingChannelId      bigint
+    LoggingChannelId      bigint,
+    TimeZoneId            nvarchar(100)  default 'UTC'             not null
 )
 go

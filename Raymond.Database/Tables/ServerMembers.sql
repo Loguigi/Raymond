@@ -7,7 +7,7 @@ create table ServerMembers
     Name       nvarchar(50),
     Level      int default 1 not null,
     Experience int default 0 not null,
-    Birthday   datetime,
+    Birthday   date,
     Active     bit default 1
 )
 go

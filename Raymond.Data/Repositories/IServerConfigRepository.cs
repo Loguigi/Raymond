@@ -1,6 +1,5 @@
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
-using Raymond.Data.Models;
 using Raymond.Data.Sql;
 using Raymond.Shared.Entities;
 
@@ -29,6 +28,7 @@ public class SqlServerConfigRepository(
         public bool EnableLevels { get; set; }
         public string LevelUpMessage { get; set; } = "has leveled up!";
         public long? LoggingChannelId { get; set; }
+        public string TimeZoneId { get; set; } = "UTC";
     }
 
     public async Task<ServerConfig> GetConfigAsync(DiscordGuild guild, CancellationToken ct = default)
@@ -53,6 +53,7 @@ public class SqlServerConfigRepository(
         config.LevelUpMessage = configRecord.LevelUpMessage;
         if (configRecord.LoggingChannelId.HasValue) 
             config.LoggingChannel = await guild.GetChannelAsync((ulong)configRecord.LoggingChannelId.Value);
+        config.TimeZoneId = configRecord.TimeZoneId;
         
         return config;
     }
@@ -70,7 +71,8 @@ public class SqlServerConfigRepository(
             BirthdayMessage = config.BirthdayMessage,
             EnableLevels = config.EnableLevels,
             LevelUpMessage = config.LevelUpMessage,
-            LoggingChannelId = config.LoggingChannelId
+            LoggingChannelId = config.LoggingChannelId,
+            TimeZoneId = config.TimeZoneId,
         };
         
         await ExecuteAsync("SaveServerConfig", record);

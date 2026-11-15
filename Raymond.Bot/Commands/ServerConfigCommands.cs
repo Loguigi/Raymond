@@ -162,5 +162,47 @@ public class ServerConfigCommands(
             await Send(ctx, Embeds.ConfigMessage(ctx.Guild!, type.ToString(), old, message));
         }, "config message");
     }
+
+    [Command("timezone"), Description("Set the server's time zone ID. Leave blank to reset to UTC")]
+    public async Task Timezone(SlashCommandContext ctx,
+        [MinMaxLength(1, 100)] string? timezone = null)
+    {
+        await ExecuteAsync(ctx, async () =>
+        {
+            timezone ??= "UTC";
+            if (!TimeZoneInfo.TryFindSystemTimeZoneById(timezone, out var timeZone))
+            {
+                await Send(ctx, Embeds.Error("Invalid time zone ID. Use a system time zone ID such as `America/New_York` or `UTC`."));
+                return;
+            }
+
+            var config = await configRepo.GetConfigAsync(ctx.Guild!);
+            var old = config.TimeZoneId;
+            config.TimeZoneId = timeZone!.Id;
+
+            await configRepo.SaveConfigAsync(config);
+            await Send(ctx, Embeds.ConfigMessage(ctx.Guild!, "TimeZone", old, config.TimeZoneId));
+        }, "config timezone");
+    }
+
+    [Command("birthdayhour"), Description("Set the birthday notification hour in the server's time zone (0-23)")]
+    public async Task BirthdayHour(SlashCommandContext ctx, int hour)
+    {
+        await ExecuteAsync(ctx, async () =>
+        {
+            if (hour is < 0 or > 23)
+            {
+                await Send(ctx, Embeds.Error("Birthday notification hour must be between 0 and 23."));
+                return;
+            }
+
+            var config = await configRepo.GetConfigAsync(ctx.Guild!);
+            var old = config.BirthdayTimerHour;
+            config.BirthdayTimerHour = hour;
+
+            await configRepo.SaveConfigAsync(config);
+            await Send(ctx, Embeds.ConfigMessage(ctx.Guild!, "BirthdayTimerHour", old.ToString(), hour.ToString()));
+        }, "config birthdayhour");
+    }
 }
 

@@ -12,58 +12,100 @@ public class TaskSchedulerService(
     : BackgroundService
 {
     private readonly TimeZoneInfo _timeZone = TimeZoneInfo.FindSystemTimeZoneById(options.Value.Timezone);
+    
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var scope = scopeFactory.CreateScope();
-        var tasks = scope.ServiceProvider.GetServices<IScheduledTask>();
+        List<Type> taskTypes;
 
-        foreach (var task in tasks)
+        using (var scope = scopeFactory.CreateScope())
         {
+            taskTypes =
+            [
+                .. scope.ServiceProvider
+                    .GetServices<IScheduledTask>()
+                    .Select(task => task.GetType())
+            ];
+        }
+
+        var runningTasks = taskTypes.Select(async taskType =>
+        {
+            logger.LogInformation("Starting task scheduler for {Name}", taskType.Name);
+
             try
             {
-                using var taskCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-                logger.LogInformation("Starting task schedule {Name} at {Now}", task.GetType().Name, DateTimeOffset.UtcNow);
-
-                await StartTaskSchedule(task, taskCts);
+                await StartTaskSchedule(taskType, stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                logger.LogInformation("Task scheduler for {Name} stopped", taskType.Name);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error starting task {Name}", task.GetType().Name);
+                logger.LogError(ex, "Task scheduler for {Name} failed", taskType.Name);
             }
-        }
+        });
+
+        await Task.WhenAll(runningTasks);
     }
 
-    private async Task StartTaskSchedule(IScheduledTask task, CancellationTokenSource taskCts)
+    private async Task StartTaskSchedule(Type taskType, CancellationToken stoppingToken)
     {
-        int runCounter = 0;
+        var runCounter = 0;
         
-        while (!taskCts.IsCancellationRequested)
-        {
-            runCounter++;
+        string taskName;
+        string cronExpression;
             
+        using (var scope = scopeFactory.CreateScope())
+        {
+            var task = (IScheduledTask)scope.ServiceProvider.GetRequiredService(taskType);
+
+            taskName = task.Name;
+            cronExpression = task.CronExpression;
+        }
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
             try
             {
                 var nowUtc = DateTimeOffset.UtcNow;
-                if (!CronScheduleCalculator.TryGetNextRunUtc(task.CronExpression, nowUtc, _timeZone, out var nextRunUtc) || !nextRunUtc.HasValue)
+
+                if (!CronScheduleCalculator.TryGetNextRunUtc(cronExpression, nowUtc, _timeZone, out var nextRunUtc) || !nextRunUtc.HasValue)
                 {
-                    logger.LogError("Invalid cron expression {CronExpression} for task '{TaskName}'", task.CronExpression, task.Name);
-                    await taskCts.CancelAsync();
+                    logger.LogError("Invalid cron expression {CronExpression} for task '{TaskName}'", cronExpression, taskName);
                     return;
                 }
-                
+
                 var delay = nextRunUtc.Value - nowUtc;
-                await Task.Delay(delay.Milliseconds, taskCts.Token);
+                if (delay < TimeSpan.Zero)
+                {
+                    delay = TimeSpan.Zero;
+                }
+
+                logger.LogInformation("Task '{TaskName}' scheduled to run at {NextRun}", taskName, nextRunUtc.Value);
+
+                await Task.Delay(delay, stoppingToken);
+
+                runCounter++;
+
+                logger.LogInformation("Starting task run #{RunCount} for task '{TaskName}'", runCounter, taskName);
                 
-                logger.LogInformation("");
-                await task.ExecuteTaskRun(taskCts.Token);
+                using (var scope = scopeFactory.CreateScope())
+                {
+                    var task = (IScheduledTask)scope.ServiceProvider.GetRequiredService(taskType);
+
+                    await task.ExecuteTaskRun(stoppingToken);
+                }
+
+                logger.LogInformation("Completed task run #{RunCount} for task '{TaskName}'", runCounter, taskName);
             }
-            catch (OperationCanceledException) when (taskCts.IsCancellationRequested)
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                logger.LogWarning("Task run #{RunCount} for task '{TaskName}' cancelled by host", runCounter, task.Name);
+                logger.LogInformation("Task scheduler for '{TaskName}' is stopping", taskName);
+                return;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error executing task run #{RunCount} for task '{Name}'", runCounter, task.Name);
+                logger.LogError(ex, "Error executing task '{TaskName}'", taskName);
             }
         }
     }

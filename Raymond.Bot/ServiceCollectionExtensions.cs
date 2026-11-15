@@ -82,6 +82,7 @@ public static class ServiceCollectionExtensions
 
             foreach (var taskType in taskTypes)
             {
+                services.AddScoped(taskType);
                 services.AddScoped(typeof(IScheduledTask), taskType);
             }
         }

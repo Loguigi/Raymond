@@ -15,6 +15,8 @@ public class ServerConfig(DiscordGuild guild, DiscordChannel defaultChannel)
     public bool EnableLevels { get; set; }
     public string LevelUpMessage { get; set; } = "has leveled up!";
     public DiscordChannel? LoggingChannel { get; set; }
+    public string TimeZoneId { get; set; } = "UTC";
+    public TimeZoneInfo TimeZone => TimeZoneInfo.FindSystemTimeZoneById(TimeZoneId);
 
     public long GuildId => (long)Guild.Id;
     public long DefaultChannelId => (long)DefaultChannel.Id;

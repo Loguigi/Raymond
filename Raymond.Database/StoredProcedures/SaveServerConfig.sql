@@ -9,7 +9,8 @@ create proc [SaveServerConfig]
 @BirthdayMessage nvarchar(200),
 @EnableLevels bit,
 @LevelUpMessage nvarchar(200),
-@LoggingChannelId bigint
+@LoggingChannelId bigint,
+@TimeZoneId nvarchar(100)
 
 as
 begin
@@ -25,7 +26,8 @@ begin
         BirthdayMessage = @BirthdayMessage, 
         EnableLevels = @EnableLevels, 
         LevelUpMessage = @LevelUpMessage, 
-        LoggingChannelId = @LoggingChannelId 
+        LoggingChannelId = @LoggingChannelId,
+        TimeZoneId = @TimeZoneId
     where GuildId = @GuildId
 end
 
