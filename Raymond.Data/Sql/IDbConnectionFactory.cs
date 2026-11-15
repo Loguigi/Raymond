@@ -16,10 +16,10 @@ public sealed class SqlConnectionFactory(IConfiguration config, ILogger<SqlConne
     {
         try
         {
-            var connectionString = config.GetConnectionString("raymond-sql");
+            var connectionString = config.GetConnectionString("RaymondSql");
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new Exception("raymond-sql connection string is not configured. Please check configuration settings.");
+                throw new Exception("RaymondSql connection string is not configured. Please check configuration settings.");
             }
             
             return new SqlConnection(connectionString);
