@@ -163,4 +163,28 @@ public static class CustomMessages
             Buttons = PaginationButtons.Create(paginator, page => new WheelOptionListId(wheel.Id, page).Build())
         };
     }
+
+    public static M SantaEventDetails(TimeZoneInfo timeZone, SantaConfig santaConfig, bool firstSend)
+    {
+        return new M
+        {
+            Content = firstSend ? "@everyone" : string.Empty,
+            EveryoneMention = firstSend,
+            Embed = new E
+            {
+                Author = santaConfig.Guild.Name,
+                AuthorImg = santaConfig.Guild.IconUrl,
+                Color = DiscordColor.SapGreen,
+                Title = $"{TimeZoneHelper.GetCurrentDate(timeZone).Year} Secret Santa",
+                Fields =
+                [
+                    new EField("Date", $"{santaConfig.ExchangeDate:dddd, MMMM d}", true),
+                    new EField("Location", santaConfig.ExchangeLocation, true),
+                    new EField("Price Limit", santaConfig.PriceLimit?.ToString("C2") ?? "None", true)
+                ],
+                Desc =
+                    $"Welcome to this year's Secret Santa!\n\nTo participate, type `/santa participate`. Once the participation deadline has past **({santaConfig.ParticipationDeadline:dddd, MMMM d})** or an admin locks in the names, you can type `/santa whoigot` to see the name of the person you are gifting.\n\nUse `/santa view` to see these gift exchange details again."
+            },
+        };
+    }
 }
