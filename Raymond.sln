@@ -12,7 +12,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Raymond.Data", "Raymond.Dat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Raymond.Shared", "Raymond.Shared\Raymond.Shared.csproj", "{0E04DF62-27F0-4FD2-80AF-AA0DA6AF844B}"
 EndProject
-Project("{42EA0DBD-9CF1-443E-919E-BE9C484E4577}") = "Raymond.Database", "Raymond.Database\Raymond.Database.sqlproj", "{D5063B78-A1C3-4FC0-A417-9F75D2ED6726}"
+Project("{42EA0DBD-9CF1-443E-919E-BE9C484E4577}") = "Raymond.Sql", "Raymond.Sql\Raymond.Sql.sqlproj", "{D5063B78-A1C3-4FC0-A417-9F75D2ED6726}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Raymond.AppHost", "Raymond.AppHost\Raymond.AppHost.csproj", "{B875FE44-DA57-4A35-A2DB-D05433DC55CA}"
 EndProject

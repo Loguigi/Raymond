@@ -54,6 +54,7 @@ public class TaskSchedulerService(
         
         string taskName;
         string cronExpression;
+        bool runOnStartup;
             
         using (var scope = scopeFactory.CreateScope())
         {
@@ -61,6 +62,7 @@ public class TaskSchedulerService(
 
             taskName = task.Name;
             cronExpression = task.CronExpression;
+            runOnStartup = task.RunOnStartup;
         }
 
         while (!stoppingToken.IsCancellationRequested)
@@ -68,6 +70,25 @@ public class TaskSchedulerService(
             try
             {
                 var nowUtc = DateTimeOffset.UtcNow;
+
+                if (runCounter == 0 && runOnStartup)
+                {
+                    // Delay the first run to allow the bot to fully initialize
+                    await Task.Delay(TimeSpan.FromSeconds(20), stoppingToken);
+                    
+                    runCounter++;
+
+                    logger.LogInformation("Starting task run #{RunCount} for task '{TaskName}'", runCounter, taskName);
+                    
+                    using (var scope = scopeFactory.CreateScope())
+                    {
+                        var task = (IScheduledTask)scope.ServiceProvider.GetRequiredService(taskType);
+
+                        await task.ExecuteTaskRun(stoppingToken);
+                    }
+
+                    logger.LogInformation("Completed task run #{RunCount} for task '{TaskName}'", runCounter, taskName);
+                }
 
                 if (!CronScheduleCalculator.TryGetNextRunUtc(cronExpression, nowUtc, _timeZone, out var nextRunUtc) || !nextRunUtc.HasValue)
                 {

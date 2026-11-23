@@ -28,7 +28,7 @@ public class GuildMemberRemovedHandler(
     {
         await ExecuteAsync(e, async () =>
         {
-            var member = await memberRepo.GetMemberAsync(e.Guild, e.Member);
+            var member = await memberRepo.GetMemberAsync(e.Guild.Id.ToDbId(), e.Member.Id.ToDbId());
             member.Active = false;
             
             await memberRepo.SaveMemberAsync(member);
@@ -39,19 +39,21 @@ public class GuildMemberRemovedHandler(
     {
         await ExecuteAsync(e, async () =>
         {
-            var config = await configRepo.GetConfigAsync(e.Guild);
-            if (string.IsNullOrWhiteSpace(config.LeaveMessage)) return;
+            var serverConfig = await configRepo.GetConfigAsync(e.Guild.Id.ToDbId());
+            ArgumentNullException.ThrowIfNull(serverConfig);
             
-            var member = await memberRepo.GetMemberAsync(e.Guild, e.Member);
+            if (string.IsNullOrWhiteSpace(serverConfig.LeaveMessage)) return;
+            
+            var member = await memberRepo.GetMemberAsync(e.Guild.Id.ToDbId(), e.Member.Id.ToDbId());
 
             var embed = new E
             {
-                Desc = $"### ⬅️ {member.DisplayMention} {config.LeaveMessage}",
+                Desc = $"### ⬅️ {member.DisplayMention()} {serverConfig.LeaveMessage}",
                 Color = DiscordColor.Red,
                 Timestamp = true
             };
 
-            await Send(config.DefaultChannel, embed);
+            await Send(await e.Guild.GetChannelAsync(serverConfig.DefaultChannelId.ToDiscordId()), embed);
         }, "leave-message");
     }
 }

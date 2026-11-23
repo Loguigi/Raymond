@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
+using Raymond.Shared.Services;
 using Raymond.Shared.Utilities;
 
 namespace Raymond.Bot.Scheduling;
@@ -13,6 +14,7 @@ public class BirthdayNotificationTask(
     DiscordClient client,
     ILogger<BirthdayNotificationTask> logger,
     IServerMemberRepository memberRepo,
+    BirthdayService birthdayService,
     IServerConfigRepository configRepo,
     IConfiguration config,
     IOptions<SchedulingOptions> options)
@@ -21,6 +23,7 @@ public class BirthdayNotificationTask(
     private readonly DiscordClient _client = client;
     public string Name => "Birthday Notification";
     public string CronExpression => options.Value.Birthdays;
+    public bool RunOnStartup => false;
 
     public async Task ExecuteTaskRun(CancellationToken ct)
     {
@@ -30,39 +33,41 @@ public class BirthdayNotificationTask(
             {
                 try
                 {
-                    var serverConfig = await configRepo.GetConfigAsync(guild, ct);
+                    var serverConfig = await configRepo.GetConfigAsync(guild.Id.ToDbId(), ct);
+                    ArgumentNullException.ThrowIfNull(serverConfig);
+                    
                     if (!serverConfig.BirthdayNotifications || 
                         TimeZoneHelper.GetCurrentTime(serverConfig.TimeZone) is var nowLocal && nowLocal.Hour != serverConfig.BirthdayTimerHour) continue;
                     
                     var localDate = TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone);
-                    var members = await memberRepo.GetMembersAsync(guild, ct);
-                    var birthdays = members.Where(member => member.GetDaysUntilBirthday(localDate) <= 14).ToList();
+                    var members = await memberRepo.GetMembersAsync(guild.Id.ToDbId(), ct);
+                    var birthdays = members.Where(member => birthdayService.GetDaysUntilBirthday(member, localDate) <= 14).ToList();
 
                     foreach (var member in birthdays)
                     {
-                        if (member.HasBirthdayToday(localDate))
+                        if (birthdayService.HasBirthdayToday(member, localDate))
                         {
                             var m = new M
                             {
                                 Content = "@everyone",
                                 Embed = new E
                                 {
-                                    Desc = $"# 🎉 {serverConfig.BirthdayMessage} {member.DisplayMention} (**{member.GetAge(localDate)}**) 🎉",
+                                    Desc = $"# 🎉 {serverConfig.BirthdayMessage} {member.DisplayMention()} (**{birthdayService.GetAge(member, localDate)}**) 🎉",
                                     Color = DiscordColor.Magenta,
                                     Timestamp = true
                                 },
                                 EveryoneMention = true
                             };
                             
-                            await Send(serverConfig.DefaultChannel, m);
+                            await Send(await guild.GetChannelAsync(serverConfig.DefaultChannelId.ToDiscordId()), m);
                             continue;
                         }
 
-                        var daysUntilBirthday = member.GetDaysUntilBirthday(localDate);
+                        var daysUntilBirthday = birthdayService.GetDaysUntilBirthday(member, localDate);
                         var message = daysUntilBirthday switch
                         {
-                            1 => $"🎉 {member.DisplayMention}'s birthday is **__tomorrow__**! 🎉",
-                            7 or 14 => $"🎉 {member.DisplayMention}'s birthday is in **__{daysUntilBirthday} days__**! 🎉",
+                            1 => $"🎉 {member.DisplayMention()}'s birthday is **__tomorrow__**! 🎉",
+                            7 or 14 => $"🎉 {member.DisplayMention()}'s birthday is in **__{daysUntilBirthday} days__**! 🎉",
                             _ => string.Empty
                         };
                         
@@ -72,10 +77,10 @@ public class BirthdayNotificationTask(
                         {
                             Desc = message,
                             Color = DiscordColor.Magenta,
-                            Footer = member.GetFormattedBirthday(member.GetNextBirthday(localDate))
+                            Footer = birthdayService.GetNextBirthday(member, localDate).ToDiscordFormat()
                         };
                         
-                        await Send(serverConfig.DefaultChannel, e);
+                        await Send(await guild.GetChannelAsync(serverConfig.DefaultChannelId.ToDiscordId()), e);
                     }
                 }
                 catch (Exception ex)

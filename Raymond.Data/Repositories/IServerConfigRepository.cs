@@ -1,4 +1,3 @@
-using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
 using Raymond.Data.Sql;
 using Raymond.Shared.Entities;
@@ -7,7 +6,7 @@ namespace Raymond.Data.Repositories;
 
 public interface IServerConfigRepository
 {
-    Task<ServerConfig> GetConfigAsync(DiscordGuild guild, CancellationToken ct = default);
+    Task<ServerConfig?> GetConfigAsync(long guildId, CancellationToken ct = default);
     Task SaveConfigAsync(ServerConfig config, CancellationToken ct = default);
 }
 
@@ -31,28 +30,25 @@ public class SqlServerConfigRepository(
         public string TimeZoneId { get; set; } = "UTC";
     }
 
-    public async Task<ServerConfig> GetConfigAsync(DiscordGuild guild, CancellationToken ct = default)
+    public async Task<ServerConfig?> GetConfigAsync(long guildId, CancellationToken ct = default)
     {
-        var config = new ServerConfig(guild, guild.GetDefaultChannel()!);
-        
-        var configRecord = await GetFirstAsync<ServerConfigRecord>("GetServerConfig", new {GuildId = (long)guild.Id});
-        
-        if (configRecord is null)
+        var config = new ServerConfig
         {
-            await SaveConfigAsync(config, ct).ConfigureAwait(false);
-            configRecord = await GetFirstAsync<ServerConfigRecord>("GetServerConfig", new {GuildId = (long)guild.Id});
-        }
+            GuildId = guildId,
+        };
+        
+        var configRecord = await GetFirstAsync<ServerConfigRecord>("GetServerConfig", new {GuildId = guildId});
+        if (configRecord is null) return null;
         
         config.WelcomeMessage = configRecord!.WelcomeMessage;
         config.LeaveMessage = configRecord.LeaveMessage;
-        config.DefaultChannel = await guild.GetChannelAsync((ulong)configRecord.DefaultChannelId);
+        config.DefaultChannelId = configRecord.DefaultChannelId;
         config.BirthdayNotifications = configRecord.BirthdayNotifications;
         config.BirthdayTimerHour = configRecord.BirthdayTimerHour;
         config.BirthdayMessage = configRecord.BirthdayMessage;
         config.EnableLevels = configRecord.EnableLevels;
         config.LevelUpMessage = configRecord.LevelUpMessage;
-        if (configRecord.LoggingChannelId.HasValue) 
-            config.LoggingChannel = await guild.GetChannelAsync((ulong)configRecord.LoggingChannelId.Value);
+        config.LoggingChannelId = configRecord.LoggingChannelId;
         config.TimeZoneId = configRecord.TimeZoneId;
         
         return config;

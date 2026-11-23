@@ -9,8 +9,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
 using Raymond.Bot.Utilities;
-using Raymond.Data.Models;
 using Raymond.Data.Repositories;
+using Raymond.Shared.Models;
 
 namespace Raymond.Bot.Commands;
 
@@ -27,9 +27,9 @@ public class MiscCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var members = await memberRepo.GetMembersAsync(ctx.Guild!);
+            var members = await memberRepo.GetMembersAsync(ctx.Guild!.Id.ToDbId());
 
-            await Send(ctx, CustomMessages.Identities(ctx.Guild!, members, new IdentitiesId("1")));
+            await Send(ctx, CustomMessages.Identities(ctx.Guild!, client, members, new IdentitiesId("1")));
         }, "who");
     }
 
@@ -40,7 +40,7 @@ public class MiscCommands(
         {
             if (await IsBot(ctx, user)) return;
 
-            var member = await memberRepo.GetMemberAsync(ctx.Guild!, user);
+            var member = await memberRepo.GetMemberAsync(ctx.Guild!.Id.ToDbId(), user.Id.ToDbId());
             if (member.Name == null)
             {
                 await Send(ctx, Embeds.Error("This user does not have a name set"), true);
@@ -49,8 +49,8 @@ public class MiscCommands(
 
             var e = new E
             {
-                Author = member.User.Username,
-                AuthorImg = member.User.AvatarUrl,
+                Author = user.Username,
+                AuthorImg = user.AvatarUrl,
                 Title = "Who are you?",
                 Desc = $"# **{member.Name}**",
                 Color = DiscordColor.Aquamarine
@@ -65,7 +65,7 @@ public class MiscCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var member = await memberRepo.GetMemberAsync(ctx.Guild!, ctx.User);
+            var member = await memberRepo.GetMemberAsync(ctx.Guild!.Id.ToDbId(), ctx.User.Id.ToDbId());
             member.Name = name;
             await memberRepo.SaveMemberAsync(member);
             
@@ -79,9 +79,14 @@ public class MiscCommands(
         await ExecuteAsync(ctx, async () =>
         {
             var flip = random.Next(2) == 1 ? FlipResult.Heads : FlipResult.Tails;
-            var member = await memberRepo.GetMemberAsync(ctx.Guild!, ctx.User);
+            var member = await memberRepo.GetMemberAsync(ctx.Guild!.Id.ToDbId(), ctx.User.Id.ToDbId());
 
-            await Send(ctx, CustomMessages.CoinFlip(member, new CoinFlipId(flip, flip == FlipResult.Heads ? 1 : 0, flip == FlipResult.Tails ? 1 : 0)));
+            await Send(ctx, CustomMessages.CoinFlip(
+                member, 
+                ctx.User, 
+                new CoinFlipId(flip, 
+                    flip == FlipResult.Heads ? 1 : 0, 
+                    flip == FlipResult.Tails ? 1 : 0)));
         }, "flip");
     }
 }

@@ -9,6 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
 using Raymond.Bot.Scheduling;
+using Raymond.Bot.Services;
+using Raymond.Shared.Services;
 
 namespace Raymond.Bot;
 
@@ -28,10 +30,12 @@ public static class ServiceCollectionExtensions
                 {
                     if (eventHandlersAssembly == null) return;
                 
-                    IReadOnlyList<Type> handlerTypes = eventHandlersAssembly.GetTypes()
-                        .Where(t => t.IsClass && !t.IsAbstract)
-                        .Where(t => typeof(BaseHandler).IsAssignableFrom(t))
-                        .ToList();
+                    IReadOnlyList<Type> handlerTypes =
+                    [
+                        .. eventHandlersAssembly.GetTypes()
+                            .Where(t => t is { IsClass: true, IsAbstract: false })
+                            .Where(t => typeof(BaseHandler).IsAssignableFrom(t))
+                    ];
 
                     b.AddEventHandlers(handlerTypes, ServiceLifetime.Scoped);
                 });
@@ -85,6 +89,15 @@ public static class ServiceCollectionExtensions
                 services.AddScoped(taskType);
                 services.AddScoped(typeof(IScheduledTask), taskType);
             }
+        }
+
+        public void AddSharedServices()
+        {
+            services.AddScoped<LevelService>();
+            services.AddScoped<BirthdayService>();
+            services.AddScoped<ServerConfigService>();
+            services.AddScoped<ServerMemberService>();
+            services.AddScoped<SecretSantaService>();
         }
     }
 }

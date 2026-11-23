@@ -1,4 +1,4 @@
-create or alter proc [SaveWheelPicker]
+create proc [SaveWheelPicker]
 
 @Id int,
 @GuildId bigint,

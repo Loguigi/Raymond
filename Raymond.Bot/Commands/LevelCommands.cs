@@ -10,10 +10,12 @@ using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
 using Raymond.Bot.Utilities;
 using Raymond.Shared.Entities;
+using Raymond.Shared.Services;
 
 namespace Raymond.Bot.Commands;
 
 public class LevelCommands(
+    LevelService levelService,
     DiscordClient client,
     ILogger<BaseCommand> logger,
     IServerMemberRepository memberRepo,
@@ -26,7 +28,7 @@ public class LevelCommands(
         await ExecuteAsync(ctx, async () =>
         {
             ServerMember member;
-            var members = await memberRepo.GetMembersAsync(ctx.Guild!);
+            var members = await memberRepo.GetMembersAsync(ctx.Guild!.Id.ToDbId());
             
             if (user is not null && await IsBot(ctx, user))
             {
@@ -34,26 +36,28 @@ public class LevelCommands(
             }
             else if (user is not null)
             {
-                member = members.FirstOrDefault(x => x.User == user) ?? throw new Exception("User not found");
+                member = members.FirstOrDefault(x => x.UserId == user.Id.ToDbId()) ?? throw new Exception("User not found");
             }
             else
             {
-                member = members.FirstOrDefault(x => x.User == ctx.User) ?? throw new Exception("User not found");
+                member = members.FirstOrDefault(x => x.UserId == ctx.User.Id.ToDbId()) ?? throw new Exception("User not found");
             }
-            
-            var prefix = GetRankEmoji(member.Rank);
+
+            var rank = levelService.GetLevelRankings(members).First(m => m.Value.Id == member.Id).Key;
+            var prefix = GetRankEmoji(rank);
+            user = await member.GetDiscordUser(client);
             var e = new E
             {
                 Author = ctx.Guild!.Name,
                 AuthorImg = ctx.Guild.IconUrl,
-                Title = $"{prefix} {member.DisplayName}",
-                Thumbnail = member.User.AvatarUrl,
+                Title = $"{prefix} {member.DisplayName(user.Username)}",
+                Thumbnail = user.AvatarUrl,
                 Color = DiscordColor.Orange,
                 Fields =
                 [
-                    new EField("Rank", $"#{member.Rank}", true),
+                    new EField("Rank", $"#{rank}", true),
                     new EField("Level", member.Level.ToString(), true),
-                    new EField("Experience", $"{member.Experience} / {member.ExpNeededForNextLevel} XP")
+                    new EField("Experience", $"{member.Experience} / {levelService.ExpNeededForNextLevel(member.Level)} XP")
                 ]
             };
             
@@ -66,9 +70,10 @@ public class LevelCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var members = await memberRepo.GetMembersAsync(ctx.Guild!);
+            var members = await memberRepo.GetMembersAsync(ctx.Guild!.Id.ToDbId());
+            var rankings = levelService.GetLevelRankings(members);
 
-            await Send(ctx, CustomMessages.Leaderboard(ctx.Guild!, members, new LeaderboardId("1")));
+            await Send(ctx, CustomMessages.Leaderboard(ctx.Guild!, rankings, new LeaderboardId("1")));
         }, "leaderboard");
     }
     

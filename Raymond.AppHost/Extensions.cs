@@ -18,6 +18,7 @@ public static class Extensions
         var adminId = builder.AddParameter("DiscordAdminId", true);
 
         var timezone = builder.AddParameter("SchedulingTimezone");
+        var discordSyncCron = builder.AddParameter("SchedulingDiscordSync");
         var birthdaysCron = builder.AddParameter("SchedulingBirthdays");
         var guildEventsCron = builder.AddParameter("SchedulingGuildEvents");
 
@@ -26,6 +27,7 @@ public static class Extensions
             .WithEnvironment("RaymondToken", token)
             .WithEnvironment("AdminId", adminId)
             .WithEnvironment("Scheduling__Timezone", timezone)
+            .WithEnvironment("Scheduling__DiscordSync", discordSyncCron)
             .WithEnvironment("Scheduling__Birthdays", birthdaysCron)
             .WithEnvironment("Scheduling__GuildEvents", guildEventsCron)
             .PublishAsDockerComposeService(UnlessStopped);

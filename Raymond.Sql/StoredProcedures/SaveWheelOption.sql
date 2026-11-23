@@ -1,4 +1,4 @@
-create or alter proc [SaveWheelOption]
+create proc [SaveWheelOption]
 
 @WheelId int,
 @Option nvarchar(50),

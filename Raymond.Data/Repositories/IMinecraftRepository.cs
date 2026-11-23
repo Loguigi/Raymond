@@ -1,6 +1,4 @@
-using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
-using Raymond.Data.Models;
 using Raymond.Data.Sql;
 using Raymond.Shared.Entities;
 using Raymond.Shared.Services;
@@ -9,7 +7,7 @@ namespace Raymond.Data.Repositories;
 
 public interface IMinecraftRepository
 {
-    Task<MinecraftInfo> GetInfoAsync(DiscordGuild guild, CancellationToken ct = default);
+    Task<MinecraftInfo> GetInfoAsync(long guildId, CancellationToken ct = default);
     Task SaveInfoAsync(MinecraftInfo info, CancellationToken ct = default);
     Task<bool> IsServerOnline(MinecraftInfo info, CancellationToken ct = default);
     Task<bool> StartServerAsync(MinecraftInfo info, CancellationToken ct = default);
@@ -35,14 +33,15 @@ public class SqlMinecraftRepository(
         public string? Mods { get; set; }
     }
 
-    public async Task<MinecraftInfo> GetInfoAsync(DiscordGuild guild, CancellationToken ct = default)
+    public async Task<MinecraftInfo> GetInfoAsync(long guildId, CancellationToken ct = default)
     {
-        var infoRecord = await GetFirstAsync<MinecraftInfoRecord>("GetMinecraftInfo", new { GuildId = (long)guild.Id });
+        var infoRecord = await GetFirstAsync<MinecraftInfoRecord>("GetMinecraftInfo", new { GuildId = guildId });
+
+        if (infoRecord is null) return new MinecraftInfo();
         
-        if (infoRecord is null) return new MinecraftInfo(guild);
-        
-        return new MinecraftInfo(guild)
+        return new MinecraftInfo
         {
+            GuildId = guildId,
             ContainerName = infoRecord.ContainerName,
             Ip = infoRecord.Ip,
             Name = infoRecord.Name,
@@ -56,7 +55,7 @@ public class SqlMinecraftRepository(
     {
         var record = new MinecraftInfoRecord
         {
-            GuildId = (long)info.Guild.Id,
+            GuildId = info.GuildId,
             ContainerName = info.ContainerName,
             Ip = info.Ip,
             Name = info.Name,

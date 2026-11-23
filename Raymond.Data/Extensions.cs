@@ -14,6 +14,7 @@ public static class Extensions
         services.AddScoped<IServerConfigRepository, SqlServerConfigRepository>();
         services.AddScoped<IWheelPickerRepository, SqlWheelPickerRepository>();
         services.AddScoped<IMinecraftRepository, SqlMinecraftRepository>();
+        services.AddScoped<ISecretSantaRepository, SqlSecretSantaRepository>();
 
         return services;
     }

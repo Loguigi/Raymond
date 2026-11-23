@@ -1,4 +1,4 @@
-create or alter proc [GetWheelPickers]
+create proc [GetWheelPickers]
 
 @GuildId bigint
 

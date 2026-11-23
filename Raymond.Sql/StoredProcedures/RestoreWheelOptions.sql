@@ -1,4 +1,4 @@
-create or alter proc [RestoreWheelOptions]
+create proc [RestoreWheelOptions]
 
 @Id int
 

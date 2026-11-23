@@ -1,7 +1,4 @@
-using Dapper;
-using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
-using Raymond.Data.Models;
 using Raymond.Data.Sql;
 using Raymond.Shared.Entities;
 
@@ -9,9 +6,7 @@ namespace Raymond.Data.Repositories;
 
 public interface IWheelPickerRepository
 {
-    int MaxWheels { get; }
-    int MaxFileSizeBytes { get; }
-    Task<List<WheelPicker>> GetAllAsync(DiscordGuild guild, CancellationToken ct = default);
+    Task<List<WheelPicker>> GetAllAsync(long guildId, CancellationToken ct = default);
     Task SaveWheelAsync(WheelPicker wheelPicker, CancellationToken ct = default);
     Task SaveWheelOptionAsync(WheelPicker wheelPicker, WheelOption option, CancellationToken ct = default);
     Task RestoreWheelOptionsAsync(WheelPicker wheelPicker, CancellationToken ct = default);
@@ -23,9 +18,6 @@ public class SqlWheelPickerRepository(
     IDbConnectionFactory factory) 
     : BaseSqlRepository(logger, factory), IWheelPickerRepository
 {
-    public int MaxWheels => 25;
-    public int MaxFileSizeBytes => 50_000;
-    
     private sealed class WheelPickerRecord
     {
         public int Id { get; set; }
@@ -36,11 +28,11 @@ public class SqlWheelPickerRepository(
         public bool? TempRemoved { get; set; }
     }
     
-    public async Task<List<WheelPicker>> GetAllAsync(DiscordGuild guild, CancellationToken ct = default)
+    public async Task<List<WheelPicker>> GetAllAsync(long guildId, CancellationToken ct = default)
     {
         var wheels = new List<WheelPicker>();
         
-        var wheelRecords = await GetAllAsync<WheelPickerRecord>("GetWheelPickers", new DynamicParameters(new { GuildId = (long)guild.Id }));
+        var wheelRecords = await GetAllAsync<WheelPickerRecord>("GetWheelPickers", new { GuildId = guildId });
 
         foreach (var row in wheelRecords)
         {
@@ -52,8 +44,9 @@ public class SqlWheelPickerRepository(
             }
             else
             {
-                var newWheel = new WheelPicker(guild)
+                var newWheel = new WheelPicker
                 {
+                    GuildId = guildId,
                     Id = row.Id,
                     Name = row.Name,
                     ImageUrl = row.ImageUrl,

@@ -23,6 +23,7 @@ public class GuildEventsNotificationTask(
     private readonly DiscordClient _client = client;
     public string Name => "Guild Events Notification";
     public string CronExpression => options.Value.GuildEvents;
+    public bool RunOnStartup => false;
     
     public async Task ExecuteTaskRun(CancellationToken ct)
     {
@@ -32,7 +33,9 @@ public class GuildEventsNotificationTask(
             {
                 try
                 {
-                    var serverConfig = await configRepo.GetConfigAsync(guild, ct);
+                    var serverConfig = await configRepo.GetConfigAsync(guild.Id.ToDbId(), ct);
+                    ArgumentNullException.ThrowIfNull(serverConfig);
+                    
                     var localTime = TimeZoneHelper.GetCurrentTime(serverConfig.TimeZone);
                     
                     if (guild.ScheduledEvents.Count == 0 || localTime.Hour != GuildEventNotificationHour)
@@ -57,10 +60,10 @@ public class GuildEventsNotificationTask(
                         ServerMember? member = null;
                         if (guildEvent.Creator != null)
                         {
-                            member = await memberRepo.GetMemberAsync(guild, guildEvent.Creator, ct);
+                            member = await memberRepo.GetMemberAsync(guild.Id.ToDbId(), guildEvent.Creator.Id.ToDbId(), ct);
                         }
                         
-                        var createdBy = member is null ? string.Empty : $" created by {member.DisplayMention}";
+                        var createdBy = member is null ? string.Empty : $" created by {member.DisplayMention()}";
                         
                         var message = daysUntilEvent switch
                         {
@@ -81,7 +84,7 @@ public class GuildEventsNotificationTask(
                             }
                         };
                         
-                        await Send(serverConfig.DefaultChannel, m);
+                        await Send(await guild.GetChannelAsync(serverConfig.DefaultChannelId.ToDiscordId()), m);
                     }
                 }
                 catch (Exception ex)

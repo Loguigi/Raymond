@@ -1,4 +1,4 @@
-create or alter proc [GetMinecraftInfo]
+create proc [GetMinecraftInfo]
 
 @GuildId bigint
 

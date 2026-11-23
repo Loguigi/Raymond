@@ -22,6 +22,7 @@ builder.Services.AddDiscordBot(
 builder.Services.AddHostedService<BotHostedService>();
 builder.Services.AddBotLogging();
 builder.Services.AddDataRepositories();
+builder.Services.AddSharedServices();
 builder.Services.AddTaskScheduler();
 
 

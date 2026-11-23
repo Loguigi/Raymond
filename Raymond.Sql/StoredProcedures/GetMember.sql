@@ -1,4 +1,4 @@
-create or alter proc [GetMember]
+create proc [GetMember]
 
 @GuildId bigint,
 @UserId bigint

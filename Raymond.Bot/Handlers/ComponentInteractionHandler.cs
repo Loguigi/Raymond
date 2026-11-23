@@ -2,9 +2,11 @@ using DSharpPlus;
 using DSharpPlus.EventArgs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Raymond.Bot.Discord;
 using Raymond.Bot.Utilities;
-using Raymond.Data.Models;
 using Raymond.Data.Repositories;
+using Raymond.Shared.Models;
+using Raymond.Shared.Services;
 using Raymond.Shared.Utilities;
 using BaseHandler = Raymond.Bot.Discord.BaseHandler;
 
@@ -16,6 +18,8 @@ public class ComponentInteractionHandler(
     IServerMemberRepository memberRepo,
     IServerConfigRepository configRepo,
     IWheelPickerRepository wheelRepo,
+    LevelService levelService,
+    BirthdayService birthdayService,
     IConfiguration config,
     ILogger<ComponentInteractionHandler> logger)
     : BaseHandler(client, config, logger), IEventHandler<ComponentInteractionCreatedEventArgs>
@@ -47,10 +51,12 @@ public class ComponentInteractionHandler(
     {
         await ExecuteAsync(e, async () =>
         {
-            var members = await memberRepo.GetMembersAsync(e.Guild);
             if (!LeaderboardId.TryParse(e.Id, out var id) || id is null) return;
-
-            await Update(e, CustomMessages.Leaderboard(e.Guild, members, id));
+            
+            var members = await memberRepo.GetMembersAsync(e.Guild.Id.ToDbId());
+            var rankings = levelService.GetLevelRankings(members);
+            
+            await Update(e, CustomMessages.Leaderboard(e.Guild, rankings, id));
         }, "leaderboard", e.Id);
     }
 
@@ -59,10 +65,12 @@ public class ComponentInteractionHandler(
         await ExecuteAsync(e, async () =>
         {
             if (!BirthdayListId.TryParse(e.Id, out var id) || id is null) return;
-            var members = await memberRepo.GetMembersAsync(e.Guild);
-            var serverConfig = await configRepo.GetConfigAsync(e.Guild);
+            
+            var members = await memberRepo.GetMembersAsync(e.Guild.Id.ToDbId());
+            var serverConfig = await configRepo.GetConfigAsync(e.Guild.Id.ToDbId());
+            ArgumentNullException.ThrowIfNull(serverConfig);
 
-            await Update(e, CustomMessages.BirthdayList(e.Guild, members, TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone), id));
+            await Update(e, CustomMessages.BirthdayList(e.Guild, birthdayService, members, TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone), id));
         },  "birthday_list", e.Id);
     }
 
@@ -71,9 +79,9 @@ public class ComponentInteractionHandler(
         await ExecuteAsync(e, async () =>
         {
             if (!IdentitiesId.TryParse(e.Id, out var id) || id is null) return;
-            var members = await memberRepo.GetMembersAsync(e.Guild);
+            var members = await memberRepo.GetMembersAsync(e.Guild.Id.ToDbId());
             
-            await Update(e, CustomMessages.Identities(e.Guild!, members, id));
+            await Update(e, CustomMessages.Identities(e.Guild!, client, members, id));
         }, "identities", e.Id);
     }
     
@@ -82,12 +90,14 @@ public class ComponentInteractionHandler(
         await ExecuteAsync(e, async () =>
         {
             var flip = random.Next(2) == 1 ? FlipResult.Heads : FlipResult.Tails;
-            var member = await memberRepo.GetMemberAsync(e.Guild, e.User);
+            var member = await memberRepo.GetMemberAsync(e.Guild.Id.ToDbId(), e.User.Id.ToDbId());
             if (!CoinFlipId.TryParse(e.Id, out var id) || id is null) return;
             
-            var newId = new CoinFlipId(flip, flip == FlipResult.Heads ? id.HeadCount + 1 : id.HeadCount, flip == FlipResult.Tails ? id.TailsCount + 1 : id.TailsCount);
+            var newId = new CoinFlipId(flip, 
+                flip == FlipResult.Heads ? id.HeadCount + 1 : id.HeadCount, 
+                flip == FlipResult.Tails ? id.TailsCount + 1 : id.TailsCount);
             
-            await Update(e, CustomMessages.CoinFlip(member, newId));
+            await Update(e, CustomMessages.CoinFlip(member, e.User, newId));
         }, "coin_flip", e.Id);
     }
     
@@ -96,8 +106,8 @@ public class ComponentInteractionHandler(
         await ExecuteAsync(e, async () =>
         {
             if (!WheelSpinId.TryParse(e.Id, out var id) || id is null) return;
-            var member = await memberRepo.GetMemberAsync(e.Guild, e.User);
-            var wheel = (await wheelRepo.GetAllAsync(e.Guild)).First(w => w.Id == id.WheelId);
+            var member = await memberRepo.GetMemberAsync(e.Guild.Id.ToDbId(), e.User.Id.ToDbId());
+            var wheel = (await wheelRepo.GetAllAsync(e.Guild.Id.ToDbId())).First(w => w.Id == id.WheelId);
             var option = wheel.Options.First(o => o.Option == id.OptionSpun);
             
             if (id.RemoveOption)
@@ -113,7 +123,7 @@ public class ComponentInteractionHandler(
             var result = wheel.AvailableOptions[random.Next(wheel.AvailableOptions.Count)];
             id = new WheelSpinId(wheel.Id, id.SpinCount + 1, result.Option, id.OptionSpun, id.RemoveOption);
             
-            await Update(e, CustomMessages.WheelSpin(member, wheel, id));
+            await Update(e, CustomMessages.WheelSpin(member, e.User, wheel, id));
         }, "wheel_spin", e.Id);
     }
 
@@ -122,9 +132,9 @@ public class ComponentInteractionHandler(
         await ExecuteAsync(e, async () =>
         {
             if (!WheelOptionListId.TryParse(e.Id, out var id) || id is null) return;
-            var wheel = (await wheelRepo.GetAllAsync(e.Guild)).First(w => w.Id == id.WheelId);
+            var wheel = (await wheelRepo.GetAllAsync(e.Guild.Id.ToDbId())).First(w => w.Id == id.WheelId);
             
-            await Update(e, CustomMessages.WheelOptionList(wheel, id));
+            await Update(e, CustomMessages.WheelOptionList(wheel, e.Guild, id));
         }, "wheel_option_list", e.Id);
     }
 }

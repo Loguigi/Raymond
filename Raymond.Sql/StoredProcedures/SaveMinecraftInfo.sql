@@ -1,4 +1,4 @@
-create or alter proc [SaveMinecraftInfo]
+create proc [SaveMinecraftInfo]
 
 @GuildId bigint,
 @ContainerName nvarchar(50),

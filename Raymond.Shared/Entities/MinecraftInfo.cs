@@ -1,10 +1,8 @@
-using DSharpPlus.Entities;
-
 namespace Raymond.Shared.Entities;
 
-public class MinecraftInfo(DiscordGuild guild)
+public class MinecraftInfo
 {
-    public DiscordGuild Guild { get; } = guild;
+    public long GuildId { get; set; }
     public string ContainerName { get; set; } = string.Empty;
     public string Ip { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;

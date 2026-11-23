@@ -1,4 +1,4 @@
-create or alter proc [GetServerMembers]
+create proc [GetServerMembers]
 
 @GuildId bigint
 

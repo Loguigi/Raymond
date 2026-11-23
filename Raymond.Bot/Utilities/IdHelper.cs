@@ -1,4 +1,4 @@
-using Raymond.Data.Models;
+using Raymond.Shared.Models;
 
 namespace Raymond.Bot.Utilities;
 

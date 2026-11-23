@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
+using Raymond.Shared.Services;
 
 namespace Raymond.Bot.Handlers;
 
@@ -13,6 +14,7 @@ public class MessageCreatedHandler(
     ILogger<MessageCreatedHandler> logger,
     IServerMemberRepository memberRepo,
     IServerConfigRepository configRepo,
+    LevelService levelService,
     IConfiguration config)
     : BaseHandler(client, config, logger), IEventHandler<MessageCreatedEventArgs>
 {
@@ -28,26 +30,26 @@ public class MessageCreatedHandler(
         await ExecuteAsync(e, async () =>
         {
             // Check config for enabled levels
-            var config = await configRepo.GetConfigAsync(e.Guild);
-            if (!config.EnableLevels) return;
+            var serverConfig = await configRepo.GetConfigAsync(e.Guild.Id.ToDbId());
+            ArgumentNullException.ThrowIfNull(serverConfig);
+            if (!serverConfig.EnableLevels) return;
             
             // Get member data and grant experience
-            var member = await memberRepo.GetMemberAsync(e.Guild, e.Author);
-            var levelUp = await memberRepo.GrantExp(member);
+            var member = await memberRepo.GetMemberAsync(e.Guild.Id.ToDbId(), e.Author.Id.ToDbId());
+            var levelUp = levelService.GrantExp(member);
+            await memberRepo.SaveMemberAsync(member);
 
             // Display level up card if user levelled up
             if (levelUp)
             {
                 var embed = new E
                 {
-                    Desc = $"### ⬆️ {member.User.Mention} {config.LevelUpMessage}",
+                    Desc = $"### ⬆️ {e.Author.Mention} {serverConfig.LevelUpMessage}",
                     Footer = $"Level {member.Level - 1} ➡️ Level {member.Level}",
                     Color = DiscordColor.Aquamarine
                 };
                 
-                var defaultChannel = config.DefaultChannel;
-                
-                await Send(defaultChannel, embed);
+                await Send(await e.Guild.GetChannelAsync(serverConfig.DefaultChannelId.ToDiscordId()), embed);
             }
         }, "exp_gain");
     }

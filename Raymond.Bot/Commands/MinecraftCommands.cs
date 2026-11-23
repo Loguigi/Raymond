@@ -23,7 +23,7 @@ public class MinecraftCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var info = await mcRepo.GetInfoAsync(ctx.Guild!);
+            var info = await mcRepo.GetInfoAsync(ctx.Guild!.Id.ToDbId());
             var players = await mcRepo.GetPlayerListAsync(info);
 
             List<EField> fields =
@@ -65,7 +65,7 @@ public class MinecraftCommands(
         {
             if (!IsAdminAuthorized(ctx.User)) return;
 
-            var info = await mcRepo.GetInfoAsync(ctx.Guild!);
+            var info = await mcRepo.GetInfoAsync(ctx.Guild!.Id.ToDbId());
             info.ContainerName = container ?? info.ContainerName;
             info.Ip = ip ?? info.Ip;
             info.Name = name ?? info.Name;
@@ -97,7 +97,7 @@ public class MinecraftCommands(
                 return;
             }
             
-            var info = await mcRepo.GetInfoAsync(ctx.Guild!);
+            var info = await mcRepo.GetInfoAsync(ctx.Guild!.Id.ToDbId());
 
             if (!await mcRepo.IsServerOnline(info))
             {
@@ -134,7 +134,7 @@ public class MinecraftCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var info = await mcRepo.GetInfoAsync(ctx.Guild!);
+            var info = await mcRepo.GetInfoAsync(ctx.Guild!.Id.ToDbId());
 
             if (await mcRepo.IsServerOnline(info))
             {
@@ -178,7 +178,7 @@ public class MinecraftCommands(
                 return;
             }
             
-            var info = await mcRepo.GetInfoAsync(ctx.Guild!);
+            var info = await mcRepo.GetInfoAsync(ctx.Guild!.Id.ToDbId());
             
             if (!await mcRepo.IsServerOnline(info))
             {
@@ -212,6 +212,6 @@ public class MinecraftCommands(
 
     private bool IsAdminAuthorized(DiscordUser user)
     {
-        return user.Id == ulong.Parse(Environment.GetEnvironmentVariable("AdminId") ?? "0");
+        return user.Id == ulong.Parse(config["AdminId"] ?? "0");
     }
 }

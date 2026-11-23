@@ -28,6 +28,9 @@ public class WheelPickerCommands(
     IConfiguration config)
     : BaseCommand(client, config, logger)
 {
+    private const int MaxWheels = 25;
+    private const int MaxFileSizeBytes = 50_000;
+    
     [Command("create"), Description("Create a new wheel picker"), RequireGuild]
     public async Task CreateWheel(SlashCommandContext ctx,
         [MinMaxLength(1, 100)] string name,
@@ -35,11 +38,11 @@ public class WheelPickerCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var currentWheels = await wheelRepo.GetAllAsync(ctx.Guild!);
+            var currentWheels = await wheelRepo.GetAllAsync(ctx.Guild!.Id.ToDbId());
             
-            if (currentWheels.Count == wheelRepo.MaxWheels)
+            if (currentWheels.Count == MaxWheels)
             {
-                await Send(ctx, Embeds.Error($"Maximum number of wheels reached in the server ({wheelRepo.MaxWheels}). Please delete one to add another"), true);
+                await Send(ctx, Embeds.Error($"Maximum number of wheels reached in the server ({MaxWheels}). Please delete one to add another"), true);
                 return;
             }
             
@@ -49,8 +52,9 @@ public class WheelPickerCommands(
                 return;
             }
 
-            await wheelRepo.SaveWheelAsync(new WheelPicker(ctx.Guild!)
+            await wheelRepo.SaveWheelAsync(new WheelPicker
             {
+                GuildId = ctx.Guild!.Id.ToDbId(),
                 Name = name,
                 ImageUrl = image?.Url,
             });
@@ -86,7 +90,7 @@ public class WheelPickerCommands(
                     return;
                 }
 
-                if (file.FileSize > wheelRepo.MaxFileSizeBytes)
+                if (file.FileSize > MaxFileSizeBytes)
                 {
                     await Send(ctx, Embeds.Error("Please upload a file less than 50kb"), true);
                     return;
@@ -158,7 +162,7 @@ public class WheelPickerCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var wheel = (await wheelRepo.GetAllAsync(ctx.Guild!)).FirstOrDefault(w => w.Name == wheelName);
+            var wheel = (await wheelRepo.GetAllAsync(ctx.Guild!.Id.ToDbId())).FirstOrDefault(w => w.Name == wheelName);
             if (wheel == null)
             {
                 await Send(ctx, Embeds.Error("Wheel not found"), true);
@@ -171,11 +175,11 @@ public class WheelPickerCommands(
                 return;
             }
 
-            var member = await memberRepo.GetMemberAsync(ctx.Guild!, ctx.User);
+            var member = await memberRepo.GetMemberAsync(ctx.Guild!.Id.ToDbId(), ctx.User.Id.ToDbId());
             var result = wheel.AvailableOptions[random.Next(wheel.AvailableOptions.Count)];
             var id = new WheelSpinId(wheel.Id, 1, result.Option, "----", false);
 
-            await Send(ctx, CustomMessages.WheelSpin(member, wheel, id));
+            await Send(ctx, CustomMessages.WheelSpin(member, ctx.User, wheel, id));
         }, "wheel spin");
     }
 
@@ -239,7 +243,7 @@ public class WheelPickerCommands(
                 return;
             }
 
-            await Send(ctx, CustomMessages.WheelOptionList(wheel, new WheelOptionListId(wheel.Id, "1")));
+            await Send(ctx, CustomMessages.WheelOptionList(wheel, ctx.Guild!, new WheelOptionListId(wheel.Id, "1")));
         }, "wheel list");
     }
 
@@ -282,7 +286,7 @@ public class WheelPickerCommands(
 
     private async Task<(bool HasWheels, List<WheelPicker> Wheels)> TryGetWheels(SlashCommandContext ctx)
     {
-        var wheels = await wheelRepo.GetAllAsync(ctx.Guild!);
+        var wheels = await wheelRepo.GetAllAsync(ctx.Guild!.Id.ToDbId());
         var hasWheels = wheels.Count != 0;
 
         if (!hasWheels)
@@ -299,12 +303,12 @@ public class WheelAutoCompleteProvider : IAutoCompleteProvider
     public async ValueTask<IEnumerable<DiscordAutoCompleteChoice>> AutoCompleteAsync(AutoCompleteContext context)
     {
         var wheelManager = context.ServiceProvider.GetRequiredService<IWheelPickerRepository>();
-        var wheels = await wheelManager.GetAllAsync(context.Guild!);
+        var wheels = await wheelManager.GetAllAsync(context.Guild!.Id.ToDbId());
 
-        var input = context.UserInput?.ToLower() ?? string.Empty;
+        var input = context.UserInput?.ToLowerInvariant() ?? string.Empty;
 
         return wheels
-            .Where(w => w.Name.ToLower().Contains(input))
+            .Where(w => w.Name.ToLowerInvariant().Contains(input))
             .Take(25)
             .Select(w => new DiscordAutoCompleteChoice($"{w.Name} - {w.Options.Count} Options", w.Name));
     }

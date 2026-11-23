@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using DSharpPlus;
 using DSharpPlus.Commands;
 using DSharpPlus.Commands.ContextChecks;
@@ -7,8 +8,10 @@ using DSharpPlus.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
+using Raymond.Bot.Services;
 using Raymond.Data.Repositories;
 using Raymond.Bot.Utilities;
+using Raymond.Shared.Services;
 using Raymond.Shared.Utilities;
 
 namespace Raymond.Bot.Commands;
@@ -17,11 +20,14 @@ namespace Raymond.Bot.Commands;
 public class BirthdayCommands(
     DiscordClient client,
     IServerMemberRepository memberRepo,
+    BirthdayService birthdayService,
+    ServerMemberService memberService,
     IServerConfigRepository configRepo,
     ILogger<BirthdayCommands> logger,
     IConfiguration config)
     : BaseCommand(client, config, logger)
 {
+
     [Command("check"), Description("Check a member's birthday")]
     public async Task CheckBirthday(SlashCommandContext ctx, DiscordUser user)
     {
@@ -29,7 +35,7 @@ public class BirthdayCommands(
         {
             if (await IsBot(ctx, user)) return;
 
-            var member = await memberRepo.GetMemberAsync(ctx.Guild!, user);
+            var member = await memberRepo.GetMemberAsync(ctx.Guild!.Id.ToDbId(), user.Id.ToDbId());
             if (!member.Birthday.HasValue)
             {
                 await Send(ctx, Embeds.Error("No birthday found."), true);
@@ -38,10 +44,10 @@ public class BirthdayCommands(
 
             var e = new E
             {
-                Author = member.DisplayName,
-                AuthorImg = member.User.AvatarUrl,
+                Author = member.DisplayName(user.Username),
+                AuthorImg = user.AvatarUrl,
                 Title = "🎂 Birthday",
-                Desc = $"# {member.GetFormattedBirthday(member.Birthday)}",
+                Desc = $"# {member.Birthday.ToDiscordFormat()}",
                 Color = DiscordColor.HotPink
             };
             
@@ -54,10 +60,12 @@ public class BirthdayCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var members = await memberRepo.GetMembersAsync(ctx.Guild!);
-            var serverConfig = await configRepo.GetConfigAsync(ctx.Guild!);
+            var members = await memberRepo.GetMembersAsync(ctx.Guild!.Id.ToDbId());
+            var serverConfig = await configRepo.GetConfigAsync(ctx.Guild!.Id.ToDbId());
+            ArgumentNullException.ThrowIfNull(serverConfig);
+            
             var localDate = TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone);
-            var nextBirthdayMember = memberRepo.GetNextBirthday(members, localDate);
+            var nextBirthdayMember = birthdayService.GetNextBirthday(members, localDate);
 
             if (nextBirthdayMember == null)
             {
@@ -65,7 +73,7 @@ public class BirthdayCommands(
                 return;
             }
             
-            var daysUntilBirthday = nextBirthdayMember.GetDaysUntilBirthday(localDate);
+            var daysUntilBirthday = birthdayService.GetDaysUntilBirthday(nextBirthdayMember, localDate);
             var daysText = daysUntilBirthday switch
             {
                 0 => "🎉 Today!",
@@ -79,8 +87,8 @@ public class BirthdayCommands(
                 AuthorImg = ctx.Guild.IconUrl,
                 Title = "Next Birthday",
                 Desc =
-                    $"# {nextBirthdayMember.DisplayMention}\n\n{nextBirthdayMember.GetFormattedBirthday(nextBirthdayMember.GetNextBirthday(localDate))}\n**{daysText}**",
-                Thumbnail = nextBirthdayMember.User.AvatarUrl,
+                    $"# {nextBirthdayMember.DisplayMention()}\n\n{birthdayService.GetNextBirthday(nextBirthdayMember, localDate).ToDiscordFormat()}\n**{daysText}**",
+                Thumbnail = (await nextBirthdayMember.GetDiscordUser(client)).AvatarUrl,
                 Color = DiscordColor.HotPink
             };
             
@@ -93,11 +101,13 @@ public class BirthdayCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var members = await memberRepo.GetMembersAsync(ctx.Guild!);
-            var serverConfig = await configRepo.GetConfigAsync(ctx.Guild!);
+            var members = await memberRepo.GetMembersAsync(ctx.Guild!.Id.ToDbId());
+            var serverConfig = await configRepo.GetConfigAsync(ctx.Guild!.Id.ToDbId());
+            ArgumentNullException.ThrowIfNull(serverConfig);
+            
             var localDate = TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone);
 
-            await Send(ctx, CustomMessages.BirthdayList(ctx.Guild!, members, localDate, new BirthdayListId("1")));
+            await Send(ctx, CustomMessages.BirthdayList(ctx.Guild!, birthdayService, members, localDate, new BirthdayListId("1")));
         }, "birthday list");
     }
 
@@ -108,20 +118,16 @@ public class BirthdayCommands(
         {
             if (await IsBot(ctx, user)) return;
 
-            if (!DateOnly.TryParse($"{year}-{month}-{day}", out var date)
-                || date >= DateOnly.FromDateTime(DateTime.UtcNow))
+            if (!birthdayService.TryParseBirthday(year, month, day, out var date))
             {
                 await Send(ctx, Embeds.Error("Invalid date!"), true);
                 return;
             }
 
-            var member = await memberRepo.GetMemberAsync(ctx.Guild!, user);
-
-            member.Birthday = date;
-            await memberRepo.SaveMemberAsync(member);
+            var member = await memberService.SetBirthdayAsync(ctx.Guild!, user, date);
 
             await Send(ctx,
-                Embeds.Success($"Birthday for {member.DisplayMention} changed to {member.GetFormattedBirthday(date)}!"));
+                Embeds.Success($"Birthday for {member.DisplayMention()} changed to {date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture)}!"));
         }, "birthday change");
     }
 
@@ -130,20 +136,16 @@ public class BirthdayCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            if (!DateOnly.TryParse($"{year}-{month}-{day}", out var date)
-                || date >= DateOnly.FromDateTime(DateTime.UtcNow))
+            if (!birthdayService.TryParseBirthday(year, month, day, out var date))
             {
                 await Send(ctx, Embeds.Error("Invalid date!"), true);
                 return;
             }
 
-            var member = await memberRepo.GetMemberAsync(ctx.Guild!, ctx.User);
-
-            member.Birthday = date;
-            await memberRepo.SaveMemberAsync(member);
+            var member = await memberService.SetBirthdayAsync(ctx.Guild!, ctx.User, date);
 
             await Send(ctx,
-                Embeds.Success($"Your birthday is set to {member.GetFormattedBirthday(date)}!"));
+                Embeds.Success($"Your birthday is set to {date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture)}!"));
         }, "birthday add");
     }
 }

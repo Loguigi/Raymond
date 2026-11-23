@@ -1,4 +1,4 @@
-create or alter proc [SaveServerConfig]
+create proc [SaveServerConfig]
 
 @GuildId bigint,
 @WelcomeMessage nvarchar(200),

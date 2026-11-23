@@ -9,7 +9,7 @@ using DSharpPlus.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
-using Raymond.Data.Repositories;
+using Raymond.Bot.Services;
 
 namespace Raymond.Bot.Commands;
 
@@ -17,7 +17,7 @@ namespace Raymond.Bot.Commands;
 public class ServerConfigCommands(
     DiscordClient client,
     ILogger<ServerConfigCommands> logger,
-    IServerConfigRepository configRepo,
+    ServerConfigService configService,
     IConfiguration config)
     : BaseCommand(client, config, logger)
 {
@@ -56,31 +56,37 @@ public class ServerConfigCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var config = await configRepo.GetConfigAsync(ctx.Guild!);
-            
-            switch (type)
+            var result = await configService.UpdateConfigAsync(ctx.Guild!, config =>
             {
-                case ToggleType.BirthdayNotifications:
-                    if (toggle == config.BirthdayNotifications)
-                    {
-                        await Send(ctx, Embeds.Error($"`{type}` is already set to `{toggle}`"));
-                        return;
-                    }
-                    
-                    config.BirthdayNotifications = toggle;
-                    break;
-                case ToggleType.EnableLevels:
-                    if (toggle == config.EnableLevels)
-                    {
-                        await Send(ctx, Embeds.Error($"`{type}` is already set to `{toggle}`"));
-                        return;
-                    }
-                    
-                    config.EnableLevels = toggle;
-                    break;
+                switch (type)
+                {
+                    case ToggleType.BirthdayNotifications:
+                        if (toggle == config.BirthdayNotifications)
+                        {
+                            return $"`{type}` is already set to `{toggle}`";
+                        }
+
+                        config.BirthdayNotifications = toggle;
+                        break;
+                    case ToggleType.EnableLevels:
+                        if (toggle == config.EnableLevels)
+                        {
+                            return $"`{type}` is already set to `{toggle}`";
+                        }
+
+                        config.EnableLevels = toggle;
+                        break;
+                }
+
+                return null;
+            });
+
+            if (!result.Succeeded)
+            {
+                await Send(ctx, Embeds.Error(result.Message), true);
+                return;
             }
-            
-            await configRepo.SaveConfigAsync(config);
+
             await Send(ctx, Embeds.ConfigToggle(ctx.Guild!, type.ToString(), toggle));
         }, "config toggle");
     }
@@ -94,25 +100,31 @@ public class ServerConfigCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var config = await configRepo.GetConfigAsync(ctx.Guild!);
-            
-            switch (type)
+            DiscordChannel? effectiveChannel = channel;
+
+            var result = await configService.UpdateConfigAsync(ctx.Guild!, config =>
             {
-                case ChannelType.DefaultChannel:
-                    if (type is ChannelType.DefaultChannel && channel is null)
-                    {
-                        channel = ctx.Guild!.GetDefaultChannel();
-                    }
-                    
-                    config.DefaultChannel = channel ?? throw new Exception("Guild default channel not found");
-                    break;
-                case ChannelType.LoggingChannel:
-                    config.LoggingChannel = channel;
-                    break;
+                switch (type)
+                {
+                    case ChannelType.DefaultChannel:
+                        effectiveChannel ??= ctx.Guild!.GetDefaultChannel();
+                        config.DefaultChannelId = effectiveChannel?.Id.ToDbId() ?? throw new Exception("Guild default channel not found");
+                        break;
+                    case ChannelType.LoggingChannel:
+                        config.LoggingChannelId = channel?.Id.ToDbId();
+                        break;
+                }
+
+                return null;
+            });
+
+            if (!result.Succeeded)
+            {
+                await Send(ctx, Embeds.Error(result.Message), true);
+                return;
             }
-            
-            await configRepo.SaveConfigAsync(config);
-            await Send(ctx, Embeds.ConfigChannel(ctx.Guild!, type.ToString(), channel));
+
+            await Send(ctx, Embeds.ConfigChannel(ctx.Guild!, type.ToString(), effectiveChannel));
         }, "config channel");
     }
 
@@ -123,8 +135,6 @@ public class ServerConfigCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var config = await configRepo.GetConfigAsync(ctx.Guild!);
-        
             var defaultMessage = type switch
             {
                 MessageType.WelcomeMessage or MessageType.LeaveMessage => null,
@@ -132,33 +142,41 @@ public class ServerConfigCommands(
                 MessageType.LevelUpMessage => "has leveled up!",
                 _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
             };
-        
-            message ??= defaultMessage;
-            string? old;
 
-            switch (type)
+            message ??= defaultMessage;
+            string? old = null;
+
+            var result = await configService.UpdateConfigAsync(ctx.Guild!, config =>
             {
-                case MessageType.WelcomeMessage:
-                    old = config.WelcomeMessage;
-                    config.WelcomeMessage = message;
-                    break;
-                case MessageType.LeaveMessage:
-                    old = config.LeaveMessage;
-                    config.LeaveMessage = message;
-                    break;
-                case MessageType.BirthdayMessage:
-                    old = config.BirthdayMessage;
-                    config.BirthdayMessage = message!;
-                    break;
-                case MessageType.LevelUpMessage:
-                    old = config.LevelUpMessage;
-                    config.LevelUpMessage = message!;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
+                switch (type)
+                {
+                    case MessageType.WelcomeMessage:
+                        old = config.WelcomeMessage;
+                        config.WelcomeMessage = message;
+                        break;
+                    case MessageType.LeaveMessage:
+                        old = config.LeaveMessage;
+                        config.LeaveMessage = message;
+                        break;
+                    case MessageType.BirthdayMessage:
+                        old = config.BirthdayMessage;
+                        config.BirthdayMessage = message!;
+                        break;
+                    case MessageType.LevelUpMessage:
+                        old = config.LevelUpMessage;
+                        config.LevelUpMessage = message!;
+                        break;
+                }
+
+                return null;
+            });
+
+            if (!result.Succeeded)
+            {
+                await Send(ctx, Embeds.Error(result.Message), true);
+                return;
             }
-        
-            await configRepo.SaveConfigAsync(config);
+
             await Send(ctx, Embeds.ConfigMessage(ctx.Guild!, type.ToString(), old, message));
         }, "config message");
     }
@@ -176,12 +194,21 @@ public class ServerConfigCommands(
                 return;
             }
 
-            var config = await configRepo.GetConfigAsync(ctx.Guild!);
-            var old = config.TimeZoneId;
-            config.TimeZoneId = timeZone!.Id;
+            string? old = null;
+            var result = await configService.UpdateConfigAsync(ctx.Guild!, config =>
+            {
+                old = config.TimeZoneId;
+                config.TimeZoneId = timeZone!.Id;
+                return null;
+            });
 
-            await configRepo.SaveConfigAsync(config);
-            await Send(ctx, Embeds.ConfigMessage(ctx.Guild!, "TimeZone", old, config.TimeZoneId));
+            if (!result.Succeeded)
+            {
+                await Send(ctx, Embeds.Error(result.Message), true);
+                return;
+            }
+
+            await Send(ctx, Embeds.ConfigMessage(ctx.Guild!, "Time Zone", old, timeZone.Id));
         }, "config timezone");
     }
 
@@ -196,13 +223,21 @@ public class ServerConfigCommands(
                 return;
             }
 
-            var config = await configRepo.GetConfigAsync(ctx.Guild!);
-            var old = config.BirthdayTimerHour;
-            config.BirthdayTimerHour = hour;
+            string? old = null;
+            var result = await configService.UpdateConfigAsync(ctx.Guild!, config =>
+            {
+                old = config.BirthdayTimerHour.ToString();
+                config.BirthdayTimerHour = hour;
+                return null;
+            });
 
-            await configRepo.SaveConfigAsync(config);
-            await Send(ctx, Embeds.ConfigMessage(ctx.Guild!, "BirthdayTimerHour", old.ToString(), hour.ToString()));
+            if (!result.Succeeded)
+            {
+                await Send(ctx, Embeds.Error(result.Message), true);
+                return;
+            }
+
+            await Send(ctx, Embeds.ConfigMessage(ctx.Guild!, "Birthday Notification Hour", old, hour.ToString()));
         }, "config birthdayhour");
     }
 }
-

@@ -1,4 +1,4 @@
-namespace Raymond.Data.Models;
+namespace Raymond.Shared.Models;
 
 public enum FlipResult
 {

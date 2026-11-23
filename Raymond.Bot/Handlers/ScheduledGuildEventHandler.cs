@@ -25,8 +25,9 @@ public class ScheduledGuildEventHandler(
     {
         await ExecuteAsync(e, async () =>
         {
-            var member = await memberRepo.GetMemberAsync(e.Guild, e.Creator);
-            var serverConfig = await configRepo.GetConfigAsync(e.Guild);
+            var member = await memberRepo.GetMemberAsync(e.Guild.Id.ToDbId(), e.Creator.Id.ToDbId());
+            var serverConfig = await configRepo.GetConfigAsync(e.Guild.Id.ToDbId());
+            ArgumentNullException.ThrowIfNull(serverConfig);
             var url = $"https://discord.com/events/{e.Guild.Id}/{e.Event.Id}";
 
             var m = new M
@@ -34,12 +35,12 @@ public class ScheduledGuildEventHandler(
                 Content = url,
                 Embed = new E
                 {
-                    Desc = $"❗️New event created by {member.DisplayMention}",
+                    Desc = $"❗️New event created by {member.DisplayMention()}",
                     Color = DiscordColor.Magenta,
                 }
             };
                         
-            await Send(serverConfig.DefaultChannel, m);
+            await Send(await e.Guild.GetChannelAsync(serverConfig.DefaultChannelId.ToDiscordId()), m);
         }, "event_created");
     }
 }
