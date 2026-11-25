@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Raymond.Data.Sql;
+using Raymond.Shared.Domain;
 using Raymond.Shared.Entities;
 using Raymond.Shared.Services;
 

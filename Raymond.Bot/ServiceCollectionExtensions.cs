@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
 using Raymond.Bot.Scheduling;
 using Raymond.Bot.Services;
-using Raymond.Shared.Services;
+using Raymond.Shared.Domain;
 
 namespace Raymond.Bot;
 
@@ -93,11 +93,16 @@ public static class ServiceCollectionExtensions
 
         public void AddSharedServices()
         {
-            services.AddScoped<LevelService>();
-            services.AddScoped<BirthdayService>();
+            services.AddScoped<LevelCalculator>();
+            services.AddScoped<BirthdayRules>();
+            services.AddScoped<MinecraftRules>();
+            services.AddScoped<WheelRules>();
+            services.AddScoped<FlipRules>();
             services.AddScoped<ServerConfigService>();
             services.AddScoped<ServerMemberService>();
             services.AddScoped<SecretSantaService>();
+            services.AddScoped<MinecraftService>();
+            services.AddScoped<WheelPickerService>();
         }
     }
 }

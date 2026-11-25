@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Raymond.Bot;
 using Raymond.Bot.Discord;
 using Raymond.Data;
+using Raymond.Shared.Domain;
 using Raymond.Shared.Extensions;
 using Raymond.Shared.Services;
 

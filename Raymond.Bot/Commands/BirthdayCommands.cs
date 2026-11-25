@@ -12,7 +12,7 @@ using Raymond.Bot.Messages;
 using Raymond.Bot.Services;
 using Raymond.Data.Repositories;
 using Raymond.Bot.Utilities;
-using Raymond.Shared.Services;
+using Raymond.Shared.Domain;
 using Raymond.Shared.Utilities;
 
 namespace Raymond.Bot.Commands;
@@ -21,13 +21,14 @@ namespace Raymond.Bot.Commands;
 public class BirthdayCommands(
     DiscordClient client,
     IServerMemberRepository memberRepo,
-    BirthdayService birthdayService,
+    BirthdayRules birthdayRules,
     ServerMemberService memberService,
     IServerConfigRepository configRepo,
     ILogger<BirthdayCommands> logger,
     IConfiguration config)
     : BaseCommand(client, config, logger)
 {
+    private readonly DiscordClient _client = client;
 
     [Command("check"), Description("Check a member's birthday")]
     public async Task CheckBirthday(SlashCommandContext ctx, DiscordUser user)
@@ -36,7 +37,7 @@ public class BirthdayCommands(
         {
             if (await IsBot(ctx, user)) return;
 
-            var member = await memberRepo.GetMemberAsync(ctx.Guild!.Id.ToDbId(), user.Id.ToDbId());
+            var member = await memberService.GetMemberByUserAsync(ctx.Guild!, user);
             if (!member.Birthday.HasValue)
             {
                 await Send(ctx, Embeds.Error("No birthday found."), true);
@@ -66,7 +67,7 @@ public class BirthdayCommands(
             ArgumentNullException.ThrowIfNull(serverConfig);
             
             var localDate = TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone);
-            var nextBirthdayMember = birthdayService.GetNextBirthday(members, localDate);
+            var nextBirthdayMember = birthdayRules.GetNextBirthday(members, localDate);
 
             if (nextBirthdayMember == null)
             {
@@ -74,7 +75,7 @@ public class BirthdayCommands(
                 return;
             }
             
-            var daysUntilBirthday = birthdayService.GetDaysUntilBirthday(nextBirthdayMember, localDate);
+            var daysUntilBirthday = birthdayRules.GetDaysUntilBirthday(nextBirthdayMember, localDate);
             var daysText = daysUntilBirthday switch
             {
                 0 => "🎉 Today!",
@@ -88,8 +89,8 @@ public class BirthdayCommands(
                 AuthorImg = ctx.Guild.IconUrl,
                 Title = "Next Birthday",
                 Desc =
-                    $"# {nextBirthdayMember.DisplayMention()}\n\n{birthdayService.GetNextBirthday(nextBirthdayMember, localDate).ToDiscordFormat()}\n**{daysText}**",
-                Thumbnail = (await nextBirthdayMember.GetDiscordUser(client)).AvatarUrl,
+                    $"# {nextBirthdayMember.DisplayMention()}\n\n{birthdayRules.GetNextBirthday(nextBirthdayMember, localDate).ToDiscordFormat()}\n**{daysText}**",
+                Thumbnail = (await nextBirthdayMember.GetDiscordUser(_client)).AvatarUrl,
                 Color = DiscordColor.HotPink
             };
             
@@ -108,7 +109,7 @@ public class BirthdayCommands(
             
             var localDate = TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone);
 
-            await Send(ctx, BirthdayMessages.BirthdayList(ctx.Guild!, birthdayService, members, localDate, new BirthdayListId("1")));
+            await Send(ctx, BirthdayMessages.BirthdayList(ctx.Guild!, birthdayRules, members, localDate, new BirthdayListId("1")));
         }, "birthday list");
     }
 
@@ -119,7 +120,7 @@ public class BirthdayCommands(
         {
             if (await IsBot(ctx, user)) return;
 
-            if (!birthdayService.TryParseBirthday(year, month, day, out var date))
+            if (!birthdayRules.TryParseBirthday(year, month, day, out var date))
             {
                 await Send(ctx, Embeds.Error("Invalid date!"), true);
                 return;
@@ -137,7 +138,7 @@ public class BirthdayCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            if (!birthdayService.TryParseBirthday(year, month, day, out var date))
+            if (!birthdayRules.TryParseBirthday(year, month, day, out var date))
             {
                 await Send(ctx, Embeds.Error("Invalid date!"), true);
                 return;

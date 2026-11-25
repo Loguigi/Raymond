@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
-using Raymond.Shared.Services;
+using Raymond.Shared.Domain;
 using Raymond.Shared.Utilities;
 
 namespace Raymond.Bot.Scheduling;
@@ -14,7 +14,7 @@ public class BirthdayNotificationTask(
     DiscordClient client,
     ILogger<BirthdayNotificationTask> logger,
     IServerMemberRepository memberRepo,
-    BirthdayService birthdayService,
+    BirthdayRules birthdayRules,
     IServerConfigRepository configRepo,
     IConfiguration config,
     IOptions<SchedulingOptions> options)
@@ -41,18 +41,18 @@ public class BirthdayNotificationTask(
                     
                     var localDate = TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone);
                     var members = await memberRepo.GetMembersAsync(guild.Id.ToDbId(), ct);
-                    var birthdays = members.Where(member => birthdayService.GetDaysUntilBirthday(member, localDate) <= 14).ToList();
+                    var birthdays = members.Where(member => birthdayRules.GetDaysUntilBirthday(member, localDate) <= 14).ToList();
 
                     foreach (var member in birthdays)
                     {
-                        if (birthdayService.HasBirthdayToday(member, localDate))
+                        if (birthdayRules.HasBirthdayToday(member, localDate))
                         {
                             var m = new M
                             {
                                 Content = "@everyone",
                                 Embed = new E
                                 {
-                                    Desc = $"# 🎉 {serverConfig.BirthdayMessage} {member.DisplayMention()} (**{birthdayService.GetAge(member, localDate)}**) 🎉",
+                                    Desc = $"# 🎉 {serverConfig.BirthdayMessage} {member.DisplayMention()} (**{birthdayRules.GetAge(member, localDate)}**) 🎉",
                                     Color = DiscordColor.Magenta,
                                     Timestamp = true
                                 },
@@ -63,7 +63,7 @@ public class BirthdayNotificationTask(
                             continue;
                         }
 
-                        var daysUntilBirthday = birthdayService.GetDaysUntilBirthday(member, localDate);
+                        var daysUntilBirthday = birthdayRules.GetDaysUntilBirthday(member, localDate);
                         var message = daysUntilBirthday switch
                         {
                             1 => $"🎉 {member.DisplayMention()}'s birthday is **__tomorrow__**! 🎉",
@@ -77,7 +77,7 @@ public class BirthdayNotificationTask(
                         {
                             Desc = message,
                             Color = DiscordColor.Magenta,
-                            Footer = birthdayService.GetNextBirthday(member, localDate).ToDiscordFormat()
+                            Footer = birthdayRules.GetNextBirthday(member, localDate).ToDiscordFormat()
                         };
                         
                         await Send(await guild.GetChannelAsync(serverConfig.DefaultChannelId.ToDiscordId()), e);

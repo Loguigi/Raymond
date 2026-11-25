@@ -6,52 +6,30 @@ using DSharpPlus.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
-using Raymond.Data.Repositories;
+using Raymond.Bot.Messages;
+using Raymond.Bot.Services;
 
 namespace Raymond.Bot.Commands;
 
 [Command("mc"), RequireGuild]
 public class MinecraftCommands(
-    IMinecraftRepository mcRepo,
+    MinecraftService mcService,
     DiscordClient client,
     ILogger<MinecraftCommands> logger,
     IConfiguration config)
-    : BaseCommand(client, config, logger) 
+    : BaseCommand(client, config, logger)
 {
     [Command("info")]
     public async Task Info(SlashCommandContext ctx)
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var info = await mcRepo.GetInfoAsync(ctx.Guild!.Id.ToDbId());
-            var players = await mcRepo.GetPlayerListAsync(info);
+            var status = await mcService.GetStatusAsync(ctx.Guild!);
 
-            List<EField> fields =
-            [
-                new("Status", await mcRepo.IsServerOnline(info) ? "🟢 Online" : "🔴 Offline", true),
-                new("Players", $"{players.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length} / {info.MaxPlayers}", true),
-                new("IP", $"{info.Ip}", true),
-            ];
-            
-            if (info.Mods is not null) fields.Add(new EField("Mods", info.Mods));
-
-            var embed = new E
-            {
-                Author = "Minecraft",
-                AuthorImg =
-                    "https://cdn.discordapp.com/attachments/1129734051016740886/1534733572664070395/image.png?ex=6a753385&is=6a73e205&hm=19e2c78dc6c2694649dbf8498c1621cb1b6d378f0638da993b7bcd6860e7b00a&",
-                Color = DiscordColor.DarkGreen,
-                Title = info.Name,
-                Thumbnail = info.ImageUrl,
-                Desc = players,
-                Timestamp = true,
-                Fields = fields
-            };
-
-            await Send(ctx, embed);
+            await Send(ctx, MinecraftMessages.ServerInfo(status));
         }, "mc info");
     }
-    
+
     [Command("setup")]
     public async Task Setup(SlashCommandContext ctx,
         string? container = null,
@@ -63,155 +41,90 @@ public class MinecraftCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            if (!IsAdminAuthorized(ctx.User)) return;
+            if (!mcService.IsAdmin(ctx.User)) return;
 
-            var info = await mcRepo.GetInfoAsync(ctx.Guild!.Id.ToDbId());
-            info.ContainerName = container ?? info.ContainerName;
-            info.Ip = ip ?? info.Ip;
-            info.Name = name ?? info.Name;
-            info.ImageUrl = image ?? info.ImageUrl;
-            info.MaxPlayers = maxPlayers ?? info.MaxPlayers;
-            if (string.IsNullOrWhiteSpace(info.Mods))
+            var result = await mcService.SetupAsync(ctx.Guild!, container, ip, name, image, maxPlayers, mods);
+            if (!result.Succeeded)
             {
-                info.Mods = mods ?? info.Mods;
+                await Send(ctx, Embeds.Error(result.Message), true);
+                return;
             }
-            else if (!string.IsNullOrWhiteSpace(mods))
-            {
-                info.Mods = mods;
-            }
-
-            await mcRepo.SaveInfoAsync(info);
 
             await Send(ctx, Embeds.Success("Saved server info"), true);
-        }, "mc command");
+        }, "mc setup");
     }
-    
+
     [Command("command")]
     public async Task Command(SlashCommandContext ctx, string command)
     {
         await ExecuteAsync(ctx, async () =>
         {
-            if (!IsAdminAuthorized(ctx.User))
+            if (!mcService.IsAdmin(ctx.User))
             {
                 await Send(ctx, Embeds.Error("You are not authorized to use this command."), true);
                 return;
             }
-            
-            var info = await mcRepo.GetInfoAsync(ctx.Guild!.Id.ToDbId());
 
-            if (!await mcRepo.IsServerOnline(info))
+            var result = await mcService.RunCommandAsync(ctx.Guild!, command);
+            if (!result.Succeeded || result.Body is null)
             {
-                await Send(ctx, Embeds.Error("Server is offline"), true);
+                await Send(ctx, Embeds.Error(result.Message), true);
                 return;
             }
-            
-            var output = await mcRepo.ExecuteCommandAsync(info, command);
 
-            if (string.IsNullOrWhiteSpace(output))
+            if (string.IsNullOrWhiteSpace(result.Body.Output))
             {
                 await ctx.RespondAsync("Success", true);
                 return;
             }
-            
-            var embed = new E
-            {
-                Author = "Minecraft",
-                AuthorImg =
-                    "https://cdn.discordapp.com/attachments/1129734051016740886/1534733572664070395/image.png?ex=6a753385&is=6a73e205&hm=19e2c78dc6c2694649dbf8498c1621cb1b6d378f0638da993b7bcd6860e7b00a&",
-                Color = DiscordColor.DarkGreen,
-                Title = info.Name,
-                Thumbnail = info.ImageUrl,
-                Desc = output,
-                Timestamp = true,
-            };
 
-            await Send(ctx, embed);
+            await Send(ctx, MinecraftMessages.CommandOutput(result.Body));
         }, "mc command");
     }
-    
+
     [Command("start")]
     public async Task Start(SlashCommandContext ctx)
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var info = await mcRepo.GetInfoAsync(ctx.Guild!.Id.ToDbId());
+            var info = await mcService.GetInfoAsync(ctx.Guild!);
 
-            if (await mcRepo.IsServerOnline(info))
+            if (await mcService.IsOnlineAsync(ctx.Guild!))
             {
                 await Send(ctx, Embeds.Error("Server is already online"), true);
                 return;
             }
-            
-            await mcRepo.StartServerAsync(info);
-            
-            var embed = new E
-            {
-                Author = "Minecraft",
-                AuthorImg =
-                    "https://cdn.discordapp.com/attachments/1129734051016740886/1534733572664070395/image.png?ex=6a753385&is=6a73e205&hm=19e2c78dc6c2694649dbf8498c1621cb1b6d378f0638da993b7bcd6860e7b00a&",
-                Color = DiscordColor.Yellow,
-                Title = info.Name,
-                Thumbnail = info.ImageUrl,
-                Desc = "Starting server...",
-                Timestamp = true,
-            };
 
-            await Send(ctx, embed);
-            await Task.Delay(TimeSpan.FromSeconds(10));
-            var online = await mcRepo.IsServerOnline(info);
-            
-            embed.Desc = online ? "Server started successfully" : "Failed to start server";
-            embed.Color = online ? DiscordColor.DarkGreen : DiscordColor.DarkRed;
+            await Send(ctx, MinecraftMessages.StartPending(info));
+            var result = await mcService.StartAsync(ctx.Guild!);
 
-            await FollowUp(ctx, embed);
+            await FollowUp(ctx, MinecraftMessages.StartResult(info, result.Succeeded));
         }, "mc start");
     }
-    
+
     [Command("stop")]
     public async Task Stop(SlashCommandContext ctx)
     {
         await ExecuteAsync(ctx, async () =>
         {
-            if (!IsAdminAuthorized(ctx.User))
+            if (!mcService.IsAdmin(ctx.User))
             {
                 await Send(ctx, Embeds.Error("You are not authorized to use this command."), true);
                 return;
             }
-            
-            var info = await mcRepo.GetInfoAsync(ctx.Guild!.Id.ToDbId());
-            
-            if (!await mcRepo.IsServerOnline(info))
+
+            var info = await mcService.GetInfoAsync(ctx.Guild!);
+
+            if (!await mcService.IsOnlineAsync(ctx.Guild!))
             {
                 await Send(ctx, Embeds.Error("Server is already offline"), true);
                 return;
             }
-            
-            var embed = new E
-            {
-                Author = "Minecraft",
-                AuthorImg =
-                    "https://cdn.discordapp.com/attachments/1129734051016740886/1534733572664070395/image.png?ex=6a753385&is=6a73e205&hm=19e2c78dc6c2694649dbf8498c1621cb1b6d378f0638da993b7bcd6860e7b00a&",
-                Color = DiscordColor.Yellow,
-                Title = info.Name,
-                Thumbnail = info.ImageUrl,
-                Desc = "Shutting down server...",
-                Timestamp = true,
-            };
-            
-            await Send(ctx, embed);
-            await mcRepo.StopServerAsync(info);
-            await Task.Delay(TimeSpan.FromSeconds(15));
-            
-            var online = await mcRepo.IsServerOnline(info);
-            embed.Desc = online ? "Fail: Server is still online" : "Server is offline";
-            embed.Color = online ? DiscordColor.DarkRed : DiscordColor.DarkGreen;
-            
-            await FollowUp(ctx, embed);
-        }, "mc stop");
-    }
 
-    private bool IsAdminAuthorized(DiscordUser user)
-    {
-        return user.Id == ulong.Parse(config["AdminId"] ?? "0");
+            await Send(ctx, MinecraftMessages.StopPending(info));
+            var result = await mcService.StopAsync(ctx.Guild!);
+
+            await FollowUp(ctx, MinecraftMessages.StopResult(info, result.Succeeded));
+        }, "mc stop");
     }
 }

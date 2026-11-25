@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
-using Raymond.Shared.Services;
+using Raymond.Shared.Domain;
 
 namespace Raymond.Bot.Handlers;
 
@@ -14,7 +14,7 @@ public class MessageCreatedHandler(
     ILogger<MessageCreatedHandler> logger,
     IServerMemberRepository memberRepo,
     IServerConfigRepository configRepo,
-    LevelService levelService,
+    LevelCalculator levelCalculator,
     IConfiguration config)
     : BaseHandler(client, config, logger), IEventHandler<MessageCreatedEventArgs>
 {
@@ -36,7 +36,7 @@ public class MessageCreatedHandler(
             
             // Get member data and grant experience
             var member = await memberRepo.GetMemberAsync(e.Guild.Id.ToDbId(), e.Author.Id.ToDbId());
-            var levelUp = levelService.GrantExp(member);
+            var levelUp = levelCalculator.GrantExp(member);
             await memberRepo.SaveMemberAsync(member);
 
             // Display level up card if user levelled up

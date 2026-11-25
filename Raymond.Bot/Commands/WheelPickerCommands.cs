@@ -12,9 +12,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
 using Raymond.Bot.Messages;
+using Raymond.Bot.Services;
 using Raymond.Bot.Utilities;
 using Raymond.Data.Repositories;
-using Raymond.Shared.Entities;
+using Raymond.Shared.Domain;
 
 namespace Raymond.Bot.Commands;
 
@@ -23,47 +24,30 @@ public class WheelPickerCommands(
     DiscordClient client,
     HttpClient http,
     ILogger<WheelPickerCommands> logger,
-    IWheelPickerRepository wheelRepo,
-    IServerMemberRepository memberRepo,
-    Random random,
+    WheelPickerService wheelService,
+    WheelRules wheelRules,
+    ServerMemberService memberService,
     IConfiguration config)
     : BaseCommand(client, config, logger)
 {
-    private const int MaxWheels = 25;
-    private const int MaxFileSizeBytes = 50_000;
-    
     [Command("create"), Description("Create a new wheel picker"), RequireGuild]
     public async Task CreateWheel(SlashCommandContext ctx,
         [MinMaxLength(1, 100)] string name,
-        DiscordAttachment? image=null)
+        DiscordAttachment? image = null)
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var currentWheels = await wheelRepo.GetAllAsync(ctx.Guild!.Id.ToDbId());
-            
-            if (currentWheels.Count == MaxWheels)
+            var result = await wheelService.CreateAsync(ctx.Guild!, name, image?.Url);
+            if (!result.Succeeded)
             {
-                await Send(ctx, Embeds.Error($"Maximum number of wheels reached in the server ({MaxWheels}). Please delete one to add another"), true);
-                return;
-            }
-            
-            if (currentWheels.Any(x => x.Name == name))
-            {
-                await Send(ctx, Embeds.Error("A wheel with that name already exists"), true);
+                await Send(ctx, Embeds.Error(result.Message), true);
                 return;
             }
 
-            await wheelRepo.SaveWheelAsync(new WheelPicker
-            {
-                GuildId = ctx.Guild!.Id.ToDbId(),
-                Name = name,
-                ImageUrl = image?.Url,
-            });
-            
             await Send(ctx, Embeds.Success($"**{name}** wheel created! Use `/wheel add` to add options to your wheel."), true);
         }, "wheel create");
     }
-    
+
     [Command("add"), Description("Add options to a wheel picker, either from a text file or manually"), RequireGuild]
     public async Task AddOption(SlashCommandContext ctx,
         [SlashAutoCompleteProvider<WheelAutoCompleteProvider>] string wheelName,
@@ -72,26 +56,15 @@ public class WheelPickerCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var (hasWheels, wheels) = await TryGetWheels(ctx);
-            if (!hasWheels) return;
-            
-            var wheel = wheels.FirstOrDefault(w => w.Name == wheelName);
-            if (wheel == null)
-            {
-                await Send(ctx, Embeds.Error("Wheel not found"), true);
-                return;
-            }
-
             if (file != null)
             {
-                // Validate file type
-                if (!file.FileName!.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+                if (!wheelRules.IsOptionsFile(file.FileName))
                 {
                     await Send(ctx, Embeds.Error("Please upload a .txt file"), true);
                     return;
                 }
 
-                if (file.FileSize > MaxFileSizeBytes)
+                if (!wheelRules.IsWithinFileLimit(file.FileSize))
                 {
                     await Send(ctx, Embeds.Error("Please upload a file less than 50kb"), true);
                     return;
@@ -99,38 +72,15 @@ public class WheelPickerCommands(
 
                 try
                 {
-                    // Download the file content
                     var fileContent = await http.GetStringAsync(file.Url);
-        
-                    // Parse lines and filter out empty ones
-                    var options = fileContent
-                        .Split(["\r\n", "\n", "\r"], StringSplitOptions.RemoveEmptyEntries)
-                        .Select(line => line.Trim())
-                        .Where(line => !string.IsNullOrWhiteSpace(line))
-                        .ToList();
-
-                    if (options.Count == 0)
+                    var result = await wheelService.AddOptionsFromTextAsync(ctx.Guild!, wheelName, fileContent);
+                    if (!result.Succeeded)
                     {
-                        await Send(ctx, Embeds.Error("No valid options found in file"), true);
+                        await Send(ctx, Embeds.Error(result.Message), true);
                         return;
                     }
 
-                    int success = 0;
-                    
-                    // Add each option to the wheel
-                    foreach (var opt in options)
-                    {
-                        if (opt.Length > 50 || wheel.Options.Any(o =>
-                                string.Equals(o.Option.Trim(), opt.Trim(), StringComparison.CurrentCultureIgnoreCase)))
-                        {
-                            continue;
-                        }
-
-                        success++;
-                        await wheelRepo.SaveWheelOptionAsync(wheel, new WheelOption(opt, false));
-                    }
-
-                    await Send(ctx, Embeds.Success($"Added {success} option(s) to wheel '{wheelName}'"), true);
+                    await Send(ctx, Embeds.Success(result.Message), true);
                 }
                 catch (HttpRequestException ex)
                 {
@@ -145,14 +95,14 @@ public class WheelPickerCommands(
             }
             else if (option != null)
             {
-                if (wheel.Options.Any(o => string.Equals(o.Option.Trim(), option.Trim(), StringComparison.CurrentCultureIgnoreCase)))
+                var result = await wheelService.AddOptionAsync(ctx.Guild!, wheelName, option);
+                if (!result.Succeeded)
                 {
-                    await Send(ctx, Embeds.Error("Option already exists"), true);
+                    await Send(ctx, Embeds.Error(result.Message), true);
                     return;
                 }
-                
-                await wheelRepo.SaveWheelOptionAsync(wheel, new WheelOption(option, false));
-                await Send(ctx, Embeds.Success($"Added option '{option}' to wheel '{wheelName}'"), true);
+
+                await Send(ctx, Embeds.Success(result.Message), true);
             }
         }, "wheel add");
     }
@@ -163,24 +113,17 @@ public class WheelPickerCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var wheel = (await wheelRepo.GetAllAsync(ctx.Guild!.Id.ToDbId())).FirstOrDefault(w => w.Name == wheelName);
-            if (wheel == null)
+            var result = await wheelService.SpinAsync(ctx.Guild!, wheelName);
+            if (!result.Succeeded || result.Body is null)
             {
-                await Send(ctx, Embeds.Error("Wheel not found"), true);
+                await Send(ctx, Embeds.Error(result.Message), true);
                 return;
             }
 
-            if (wheel.AvailableOptions.Count == 0)
-            {
-                await Send(ctx, Embeds.Error("No options available in this wheel"), true);
-                return;
-            }
+            var member = await memberService.GetMemberByUserAsync(ctx.Guild!, ctx.User);
+            var id = new WheelSpinId(result.Body.Wheel.Id, 1, result.Body.Option.Option, "----", false);
 
-            var member = await memberRepo.GetMemberAsync(ctx.Guild!.Id.ToDbId(), ctx.User.Id.ToDbId());
-            var result = wheel.AvailableOptions[random.Next(wheel.AvailableOptions.Count)];
-            var id = new WheelSpinId(wheel.Id, 1, result.Option, "----", false);
-
-            await Send(ctx, WheelPickerMessages.WheelSpin(member, ctx.User, wheel, id));
+            await Send(ctx, WheelPickerMessages.WheelSpin(member, ctx.User, result.Body.Wheel, id));
         }, "wheel spin");
     }
 
@@ -190,17 +133,13 @@ public class WheelPickerCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var (hasWheels, wheels) = await TryGetWheels(ctx);
-            if (!hasWheels) return;
-            
-            var wheel = wheels.FirstOrDefault(w => w.Name == wheelName);
-            if (wheel == null)
+            var result = await wheelService.DeleteAsync(ctx.Guild!, wheelName);
+            if (!result.Succeeded)
             {
-                await Send(ctx, Embeds.Error("Wheel not found"), true);
+                await Send(ctx, Embeds.Error(result.Message), true);
                 return;
             }
-            
-            await wheelRepo.DeleteWheelPicker(wheel);
+
             await Send(ctx, Embeds.Success($"Wheel '{wheelName}' deleted"));
         }, "wheel delete");
     }
@@ -211,20 +150,14 @@ public class WheelPickerCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var (hasWheels, wheels) = await TryGetWheels(ctx);
-            if (!hasWheels) return;
-            
-            var wheel = wheels.FirstOrDefault(w => w.Name == wheelName);
-            if (wheel == null)
+            var result = await wheelService.RestoreAsync(ctx.Guild!, wheelName);
+            if (!result.Succeeded)
             {
-                await Send(ctx, Embeds.Error("Wheel not found"), true);
+                await Send(ctx, Embeds.Error(result.Message), true);
                 return;
             }
 
-            var removedOptions = wheel.TempRemovedOptions.Count;
-            await wheelRepo.RestoreWheelOptionsAsync(wheel);
-
-            await Send(ctx, Embeds.Success($"Restored `{removedOptions}` options for {wheel.Name}"));
+            await Send(ctx, Embeds.Success(result.Message));
         }, "wheel reload");
     }
 
@@ -234,17 +167,14 @@ public class WheelPickerCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var (hasWheels, wheels) = await TryGetWheels(ctx);
-            if (!hasWheels) return;
-            
-            var wheel = wheels.FirstOrDefault(w => w.Name == wheelName);
-            if (wheel == null)
+            var result = await wheelService.GetWheelAsync(ctx.Guild!, wheelName);
+            if (!result.Succeeded || result.Body is null)
             {
-                await Send(ctx, Embeds.Error("Wheel not found"), true);
+                await Send(ctx, Embeds.Error(result.Message), true);
                 return;
             }
 
-            await Send(ctx, WheelPickerMessages.WheelOptionList(wheel, ctx.Guild!, new WheelOptionListId(wheel.Id, "1")));
+            await Send(ctx, WheelPickerMessages.WheelOptionList(result.Body, ctx.Guild!, new WheelOptionListId(result.Body.Id, "1")));
         }, "wheel list");
     }
 
@@ -255,16 +185,14 @@ public class WheelPickerCommands(
     {
         await ExecuteAsync(ctx, async () =>
         {
-            var (hasWheels, wheels) = await TryGetWheels(ctx);
-            if (!hasWheels) return;
-
-            var wheel = wheels.FirstOrDefault(w => w.Name == wheelName);
-            if (wheel == null)
+            var result = await wheelService.GetWheelAsync(ctx.Guild!, wheelName);
+            if (!result.Succeeded || result.Body is null)
             {
-                await Send(ctx, Embeds.Error("Wheel not found"), true);
+                await Send(ctx, Embeds.Error(result.Message), true);
                 return;
             }
 
+            var wheel = result.Body;
             var options = string.Join(Environment.NewLine, wheel.Options.Select(o => o.Option.ToString()).ToList());
 
             var m = new M
@@ -283,19 +211,6 @@ public class WheelPickerCommands(
 
             await Send(ctx, m);
         }, "wheel export");
-    }
-
-    private async Task<(bool HasWheels, List<WheelPicker> Wheels)> TryGetWheels(SlashCommandContext ctx)
-    {
-        var wheels = await wheelRepo.GetAllAsync(ctx.Guild!.Id.ToDbId());
-        var hasWheels = wheels.Count != 0;
-
-        if (!hasWheels)
-        {
-            await Send(ctx, Embeds.Error($"No wheels found in {ctx.Guild!.Name}. Create one using `/wheel create`"), true);
-        }
-
-        return (hasWheels, wheels);
     }
 }
 

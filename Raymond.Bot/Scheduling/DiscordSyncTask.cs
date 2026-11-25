@@ -6,7 +6,6 @@ using Microsoft.Extensions.Options;
 using Raymond.Bot.Discord;
 using Raymond.Data.Repositories;
 using Raymond.Shared.Entities;
-using Raymond.Shared.Services;
 using Raymond.Shared.Utilities;
 
 namespace Raymond.Bot.Scheduling;

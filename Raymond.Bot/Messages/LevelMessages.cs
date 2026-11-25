@@ -7,6 +7,14 @@ namespace Raymond.Bot.Messages;
 
 public static class LevelMessages
 {
+    public static string GetRankEmoji(int rank) => rank switch
+    {
+        1 => "🥇",
+        2 => "🥈",
+        3 => "🥉",
+        _ => ""
+    };
+
     public static M Leaderboard(DiscordGuild guild, SortedDictionary<int, ServerMember> rankings, LeaderboardId id)
     {
         var paginator = new Paginator<KeyValuePair<int, ServerMember>>(rankings, 10, id.PageToken);

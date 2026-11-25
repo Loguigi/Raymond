@@ -1,9 +1,9 @@
 using System.Globalization;
 using Raymond.Shared.Entities;
 
-namespace Raymond.Shared.Services;
+namespace Raymond.Shared.Domain;
 
-public class BirthdayService
+public class BirthdayRules
 {
     public bool TryParseBirthday(long year, long month, long day, out DateOnly birthday)
     {

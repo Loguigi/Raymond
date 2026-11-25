@@ -1,8 +1,8 @@
 using Raymond.Shared.Entities;
 
-namespace Raymond.Shared.Services;
+namespace Raymond.Shared.Domain;
 
-public class LevelService
+public class LevelCalculator
 {
     private const int ExpGain = 1;
     

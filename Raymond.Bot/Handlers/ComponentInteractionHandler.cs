@@ -6,8 +6,8 @@ using Raymond.Bot.Discord;
 using Raymond.Bot.Messages;
 using Raymond.Bot.Utilities;
 using Raymond.Data.Repositories;
+using Raymond.Shared.Domain;
 using Raymond.Shared.Models;
-using Raymond.Shared.Services;
 using Raymond.Shared.Utilities;
 using BaseHandler = Raymond.Bot.Discord.BaseHandler;
 
@@ -19,8 +19,8 @@ public class ComponentInteractionHandler(
     IServerMemberRepository memberRepo,
     IServerConfigRepository configRepo,
     IWheelPickerRepository wheelRepo,
-    LevelService levelService,
-    BirthdayService birthdayService,
+    LevelCalculator levelCalculator,
+    BirthdayRules birthdayRules,
     IConfiguration config,
     ILogger<ComponentInteractionHandler> logger)
     : BaseHandler(client, config, logger), IEventHandler<ComponentInteractionCreatedEventArgs>
@@ -55,7 +55,7 @@ public class ComponentInteractionHandler(
             if (!LeaderboardId.TryParse(e.Id, out var id) || id is null) return;
             
             var members = await memberRepo.GetMembersAsync(e.Guild.Id.ToDbId());
-            var rankings = levelService.GetLevelRankings(members);
+            var rankings = levelCalculator.GetLevelRankings(members);
             
             await Update(e, LevelMessages.Leaderboard(e.Guild, rankings, id));
         }, "leaderboard", e.Id);
@@ -71,7 +71,7 @@ public class ComponentInteractionHandler(
             var serverConfig = await configRepo.GetConfigAsync(e.Guild.Id.ToDbId());
             ArgumentNullException.ThrowIfNull(serverConfig);
 
-            await Update(e, BirthdayMessages.BirthdayList(e.Guild, birthdayService, members, TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone), id));
+            await Update(e, BirthdayMessages.BirthdayList(e.Guild, birthdayRules, members, TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone), id));
         },  "birthday_list", e.Id);
     }
 
