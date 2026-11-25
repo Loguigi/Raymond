@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
+using Raymond.Bot.Messages;
 using Raymond.Bot.Utilities;
 using Raymond.Data.Repositories;
 using Raymond.Shared.Entities;
@@ -179,7 +180,7 @@ public class WheelPickerCommands(
             var result = wheel.AvailableOptions[random.Next(wheel.AvailableOptions.Count)];
             var id = new WheelSpinId(wheel.Id, 1, result.Option, "----", false);
 
-            await Send(ctx, CustomMessages.WheelSpin(member, ctx.User, wheel, id));
+            await Send(ctx, WheelPickerMessages.WheelSpin(member, ctx.User, wheel, id));
         }, "wheel spin");
     }
 
@@ -243,7 +244,7 @@ public class WheelPickerCommands(
                 return;
             }
 
-            await Send(ctx, CustomMessages.WheelOptionList(wheel, ctx.Guild!, new WheelOptionListId(wheel.Id, "1")));
+            await Send(ctx, WheelPickerMessages.WheelOptionList(wheel, ctx.Guild!, new WheelOptionListId(wheel.Id, "1")));
         }, "wheel list");
     }
 

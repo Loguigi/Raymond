@@ -8,6 +8,7 @@ using DSharpPlus.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
+using Raymond.Bot.Messages;
 using Raymond.Bot.Utilities;
 using Raymond.Data.Repositories;
 using Raymond.Shared.Models;
@@ -29,7 +30,7 @@ public class MiscCommands(
         {
             var members = await memberRepo.GetMembersAsync(ctx.Guild!.Id.ToDbId());
 
-            await Send(ctx, CustomMessages.Identities(ctx.Guild!, client, members, new IdentitiesId("1")));
+            await Send(ctx, MiscMessages.Identities(ctx.Guild!, client, members, new IdentitiesId("1")));
         }, "who");
     }
 
@@ -81,7 +82,7 @@ public class MiscCommands(
             var flip = random.Next(2) == 1 ? FlipResult.Heads : FlipResult.Tails;
             var member = await memberRepo.GetMemberAsync(ctx.Guild!.Id.ToDbId(), ctx.User.Id.ToDbId());
 
-            await Send(ctx, CustomMessages.CoinFlip(
+            await Send(ctx, MiscMessages.CoinFlip(
                 member, 
                 ctx.User, 
                 new CoinFlipId(flip, 

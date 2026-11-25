@@ -7,6 +7,7 @@ using DSharpPlus.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
+using Raymond.Bot.Messages;
 using Raymond.Data.Repositories;
 using Raymond.Bot.Utilities;
 using Raymond.Shared.Entities;
@@ -73,7 +74,7 @@ public class LevelCommands(
             var members = await memberRepo.GetMembersAsync(ctx.Guild!.Id.ToDbId());
             var rankings = levelService.GetLevelRankings(members);
 
-            await Send(ctx, CustomMessages.Leaderboard(ctx.Guild!, rankings, new LeaderboardId("1")));
+            await Send(ctx, LevelMessages.Leaderboard(ctx.Guild!, rankings, new LeaderboardId("1")));
         }, "leaderboard");
     }
     

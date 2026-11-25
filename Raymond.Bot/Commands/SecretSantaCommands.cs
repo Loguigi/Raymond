@@ -9,6 +9,7 @@ using DSharpPlus.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
+using Raymond.Bot.Messages;
 using Raymond.Bot.Services;
 using Raymond.Bot.Utilities;
 using Raymond.Data.Repositories;
@@ -76,7 +77,7 @@ public class SecretSantaCommands(
                 return;
             }
 
-            await Send(ctx, CustomMessages.SantaEventDetails(ctx.Guild!, serverConfig.TimeZone, result.Body, true));
+            await Send(ctx, SecretSantaMessages.SantaEventDetails(ctx.Guild!, serverConfig.TimeZone, result.Body, true));
         }, "santa start");
     }
 
@@ -95,7 +96,7 @@ public class SecretSantaCommands(
                 return;
             }
             
-            await Send(ctx, CustomMessages.SantaEventDetails(ctx.Guild!, serverConfig.TimeZone, result.Body, false), true);
+            await Send(ctx, SecretSantaMessages.SantaEventDetails(ctx.Guild!, serverConfig.TimeZone, result.Body, false), true);
         }, "santa view");
     }
 

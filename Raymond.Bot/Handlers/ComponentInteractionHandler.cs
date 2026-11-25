@@ -3,6 +3,7 @@ using DSharpPlus.EventArgs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
+using Raymond.Bot.Messages;
 using Raymond.Bot.Utilities;
 using Raymond.Data.Repositories;
 using Raymond.Shared.Models;
@@ -56,7 +57,7 @@ public class ComponentInteractionHandler(
             var members = await memberRepo.GetMembersAsync(e.Guild.Id.ToDbId());
             var rankings = levelService.GetLevelRankings(members);
             
-            await Update(e, CustomMessages.Leaderboard(e.Guild, rankings, id));
+            await Update(e, LevelMessages.Leaderboard(e.Guild, rankings, id));
         }, "leaderboard", e.Id);
     }
 
@@ -70,7 +71,7 @@ public class ComponentInteractionHandler(
             var serverConfig = await configRepo.GetConfigAsync(e.Guild.Id.ToDbId());
             ArgumentNullException.ThrowIfNull(serverConfig);
 
-            await Update(e, CustomMessages.BirthdayList(e.Guild, birthdayService, members, TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone), id));
+            await Update(e, BirthdayMessages.BirthdayList(e.Guild, birthdayService, members, TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone), id));
         },  "birthday_list", e.Id);
     }
 
@@ -81,7 +82,7 @@ public class ComponentInteractionHandler(
             if (!IdentitiesId.TryParse(e.Id, out var id) || id is null) return;
             var members = await memberRepo.GetMembersAsync(e.Guild.Id.ToDbId());
             
-            await Update(e, CustomMessages.Identities(e.Guild!, client, members, id));
+            await Update(e, MiscMessages.Identities(e.Guild!, client, members, id));
         }, "identities", e.Id);
     }
     
@@ -97,7 +98,7 @@ public class ComponentInteractionHandler(
                 flip == FlipResult.Heads ? id.HeadCount + 1 : id.HeadCount, 
                 flip == FlipResult.Tails ? id.TailsCount + 1 : id.TailsCount);
             
-            await Update(e, CustomMessages.CoinFlip(member, e.User, newId));
+            await Update(e, MiscMessages.CoinFlip(member, e.User, newId));
         }, "coin_flip", e.Id);
     }
     
@@ -123,7 +124,7 @@ public class ComponentInteractionHandler(
             var result = wheel.AvailableOptions[random.Next(wheel.AvailableOptions.Count)];
             id = new WheelSpinId(wheel.Id, id.SpinCount + 1, result.Option, id.OptionSpun, id.RemoveOption);
             
-            await Update(e, CustomMessages.WheelSpin(member, e.User, wheel, id));
+            await Update(e, WheelPickerMessages.WheelSpin(member, e.User, wheel, id));
         }, "wheel_spin", e.Id);
     }
 
@@ -134,7 +135,7 @@ public class ComponentInteractionHandler(
             if (!WheelOptionListId.TryParse(e.Id, out var id) || id is null) return;
             var wheel = (await wheelRepo.GetAllAsync(e.Guild.Id.ToDbId())).First(w => w.Id == id.WheelId);
             
-            await Update(e, CustomMessages.WheelOptionList(wheel, e.Guild, id));
+            await Update(e, WheelPickerMessages.WheelOptionList(wheel, e.Guild, id));
         }, "wheel_option_list", e.Id);
     }
 }

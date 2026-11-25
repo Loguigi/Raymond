@@ -8,6 +8,7 @@ using DSharpPlus.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Raymond.Bot.Discord;
+using Raymond.Bot.Messages;
 using Raymond.Bot.Services;
 using Raymond.Data.Repositories;
 using Raymond.Bot.Utilities;
@@ -107,7 +108,7 @@ public class BirthdayCommands(
             
             var localDate = TimeZoneHelper.GetCurrentDate(serverConfig.TimeZone);
 
-            await Send(ctx, CustomMessages.BirthdayList(ctx.Guild!, birthdayService, members, localDate, new BirthdayListId("1")));
+            await Send(ctx, BirthdayMessages.BirthdayList(ctx.Guild!, birthdayService, members, localDate, new BirthdayListId("1")));
         }, "birthday list");
     }
 
